@@ -1,10 +1,10 @@
 const bcrypt = require('bcryptjs');
 const User = require('../components/authentication/user.model');
-const {logger} = require('../helpers/log');
-const {AppError} = require("../error");
+const {logger} = require('../../common/log');
+const {AppError} = require("../../error");
 
 
-const moduleName = 'verifySignIn.js -';
+const moduleName = 'verify-signin.js -';
 
 signInValidator = async (req, res, next) => {
     logger.info(`${moduleName} validate sign-in-request ${JSON.stringify(req.body.username)}`);

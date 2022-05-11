@@ -16,7 +16,7 @@ const RefreshTokenSchema = new mongoose.Schema({
     },
 });
 
-RefreshTokenSchema.statics.createRefreshToken = async function (user) {
+RefreshTokenSchema.statics.createRefreshToken = async (user) => {
     let expiredAt = new Date();
     expiredAt.setSeconds(
         expiredAt.getSeconds() + parseInt(process.env.REFRESH_TOKEN_EXPIRY)
@@ -30,6 +30,7 @@ RefreshTokenSchema.statics.createRefreshToken = async function (user) {
     let refreshToken = await _refreshToken.save();
     return refreshToken.token;
 };
+
 // Used for verifying expiry of refresh token
 RefreshTokenSchema.statics.verifyRtExpiration = (token) => {
     return token.expiryDate.getTime() < new Date().getTime();

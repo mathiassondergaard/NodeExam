@@ -1,9 +1,9 @@
-const errorHandler = require('./errorHandler');
+const errorHandler = require('./error-handler');
 const AppError = require('./AppError');
-const asyncErrHandler = require('./asyncErrHandler');
+const asyncHandler = require('./async-handler');
 
 module.exports = {
     errorHandler,
     AppError,
-    asyncErrHandler
+    asyncHandler
 };

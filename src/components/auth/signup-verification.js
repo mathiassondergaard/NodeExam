@@ -1,9 +1,9 @@
-const db = require('../config/auth.db.config');
-const {User} = require('../components/auth/');
-const {logger} = require('../helpers/log');
-const {AppError} = require("../error");
+const db = require('../db/auth.db.config');
+const {User} = require('./');
+const {logger} = require('../../common/log');
+const {AppError} = require("../../error");
 
-const moduleName = 'signupVerification.js -';
+const moduleName = 'signup-verification.js -';
 
 signupValidator = async (req, res, next) => {
     logger.info(`${moduleName} validate signup-request/uname & email ${JSON.stringify(req.body)}`);

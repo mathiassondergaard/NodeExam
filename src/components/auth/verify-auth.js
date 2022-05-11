@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
-const {getJwt} = require('../helpers');
-const {logger} = require('../helpers/log');
-const {AppError} = require("../error");
+const {getJwt} = require('../../common');
+const {logger} = require('../../common/log');
+const {AppError} = require("../../error");
 const publicKey = fs.readFileSync('public-key.pem');
 
-const moduleName = 'verifyAuth.js -';
+const moduleName = 'verify-auth.js -';
 
 // JWT Verification
 module.exports.verifyToken = (includeRoles) => {

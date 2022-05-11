@@ -1,15 +1,16 @@
+/*
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
-const User = require('./user.model');
-const Role = require('./role.model');
-const RefreshToken = require('./refreshToken.model');
-const {logger} = require('../../helpers/log');
-const {AppError} = require("../../error");
+const User = require('../models/user.model');
+const Role = require('../models/role.model');
+const RefreshToken = require('../models/refreshToken.model');
+const {logger} = require('../helpers/log');
+const {AppError} = require("../error");
 const key = fs.readFileSync('private-key.pem');
 
-const moduleName = 'auth.controller.js';
+const moduleName = 'auth-controller.js';
 
 exports.signUp = async (req, res, next) => {
     logger.info(`${moduleName} request to signup user ${JSON.stringify(req.body)}`);
@@ -159,3 +160,5 @@ const generateJWT = (user, next) => {
         });
     });
 };
+
+ */
