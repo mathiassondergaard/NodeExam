@@ -1,6 +1,6 @@
 const {logger} = require('../common/log');
 const {TokenExpiredError, JsonWebTokenError} = require("jsonwebtoken");
-const ValidationError = require('mongoose').Error.ValidationError;
+const ValidationError = require('sequelize').Error.ValidationError;
 
 const moduleName = 'error-handler.js -';
 
@@ -25,7 +25,7 @@ const handleErr = (err, res, production) => {
                 };
             });
             logger.error(`${moduleName} validation error ${JSON.stringify(errors)}`);
-            return res.status(500).json(errors);
+            return res.status(400).json(errors);
         case err instanceof TokenExpiredError:
             logger.error(`${moduleName} access token is expired`);
             res.status(401).json({message: 'Access token was expired - Unauthorized!'});

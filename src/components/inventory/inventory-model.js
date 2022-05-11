@@ -2,7 +2,7 @@ const db = require('../../db');
 
 const Inventory = db.sequelize.define('inventory', {
     location: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {

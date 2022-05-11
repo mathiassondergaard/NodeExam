@@ -2,7 +2,7 @@ const db = require('../../db');
 
 const Employee = db.sequelize.define('employees', {
     name: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -12,7 +12,7 @@ const Employee = db.sequelize.define('employees', {
         },
     },
     email: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -22,7 +22,7 @@ const Employee = db.sequelize.define('employees', {
         },
     },
     phone: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -32,13 +32,17 @@ const Employee = db.sequelize.define('employees', {
         },
     },
     title: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.ENUM('Worker', 'Supervisor', 'Manager'),
+        defaultValue: 'Worker',
         allowNull: false,
         validate: {
             notEmpty: {
                 args: true,
-                msg: 'Title cannot be empty!'
+                msg: 'Status cannot be empty!'
             },
         },
     },
 });
+
+module.exports = Employee;
+

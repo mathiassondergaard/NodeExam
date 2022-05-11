@@ -2,7 +2,7 @@ const db = require('../../db');
 
 const Supplier = db.sequelize.define('suppliers', {
     name: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -12,7 +12,7 @@ const Supplier = db.sequelize.define('suppliers', {
         },
     },
     email: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -22,7 +22,7 @@ const Supplier = db.sequelize.define('suppliers', {
         },
     },
     phone: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {

@@ -2,7 +2,7 @@ const db = require('../../db');
 
 const Product = db.sequelize.define('products', {
     name: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -12,7 +12,7 @@ const Product = db.sequelize.define('products', {
         },
     },
     SKU: {
-        type: db.dataTypes.STRING,
+        type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
@@ -22,7 +22,7 @@ const Product = db.sequelize.define('products', {
         },
     },
     stock: {
-        type: db.dataTypes.INTEGER,
+        type: db.Sequelize.INTEGER,
         allowNull: false,
         validate: {
             isInt: {
@@ -40,7 +40,7 @@ const Product = db.sequelize.define('products', {
         },
     },
     status: {
-        type: db.dataTypes.INTEGER,
+        type: db.Sequelize.INTEGER,
         allowNull: false,
         validate: {
             isInt: {
