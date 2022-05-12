@@ -1,7 +1,7 @@
 const {logger} = require('../../common/log');
 const {Task} = require('./task-model');
-const {AppError} = require("../../error");
-const {Employee} = require("../../common/models");
+const {AppError} = require('../../error');
+const {Employee} = require('../employees');
 
 const moduleName = 'task-repository.js -';
 
@@ -17,13 +17,13 @@ exports.create = async (task) => {
     });
 
     if (_task[0] === 0) {
-        logger.error(`${moduleName} no tasks present in db / db error`);
+        logger.error(`${moduleName} could not create task`);
         throw new AppError(`Create task failed`, 500, true);
     }
 
     logger.debug(`${moduleName} created task ${JSON.stringify(_task)}`);
 
-    return _task.get({plain: true});
+    return true;
 };
 
 exports.findAll = async () => {
@@ -58,7 +58,7 @@ exports.findAllByAssignee = async (assignee) => {
         nested: true,
     }, {
         where: {
-          assignee: assignee
+            assignee: assignee
         },
     });
 

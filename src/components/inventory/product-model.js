@@ -57,4 +57,18 @@ const Product = db.sequelize.define('products', {
             },
         },
     },
+    lastUpdatedBy: {
+        type: db.Sequelize.INTEGER,
+        allowNull: false,
+        validate: {
+            isInt: {
+                args: true,
+                msg: 'LastUpdatedBy must be a number!'
+            },
+            notEmpty: {
+                args: true,
+                msg: 'LastUpdatedBy cannot be empty!'
+            },
+        },
+    },
 })

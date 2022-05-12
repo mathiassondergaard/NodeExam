@@ -1,4 +1,5 @@
 const db = require('../../db');
+const {Address} = require('../../common/models/')
 
 const Employee = db.sequelize.define('employees', {
     name: {
@@ -42,6 +43,11 @@ const Employee = db.sequelize.define('employees', {
             },
         },
     },
+});
+
+Employee.hasOne(Address, {
+    foreignKey: 'addressId',
+    as: 'address'
 });
 
 module.exports = Employee;

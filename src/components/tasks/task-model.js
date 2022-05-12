@@ -90,6 +90,6 @@ Employee.hasMany(Task, {
 })
 
 module.exports = {
-    Task,
+    Task
 };
 

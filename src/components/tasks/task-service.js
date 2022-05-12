@@ -1,11 +1,11 @@
 const taskRepository = require('./task-repository');
-const {AppError} = require("../../error");
+const {AppError} = require('../../error');
+const {employeeService} = require('../employees')
 
 
 exports.create = async (body) => {
 
-    //TODO remember to make this, get the ids from body and find em through employeeservice
-    const employees = [];
+    const employees = await employeeService.findMultipleByIds(body.employeeIds)
 
     // If level is null, default will be used
     const taskToCreate = {
@@ -20,7 +20,7 @@ exports.create = async (body) => {
 };
 
 exports.delete = async (id, employeeId) => {
-    /*
+
     const employee = employeeService.findById(employeeId)
     const assignee = await taskRepository.findAssigneeById(id);
 
@@ -28,11 +28,10 @@ exports.delete = async (id, employeeId) => {
         throw new AppError(`Task ${id} could not be deleted!`, 500, true);
     }
     // Only assignee / supervisor/manager can delete tasks
-    if (!employee.name === assignee || (employee.title === 'Supervisor' || 'Manager') {
+    if (!employee.name === assignee || (employee.title === 'Supervisor' || 'Manager')) {
         throw new AppError(`Task ${id} could not be deleted, invalid permission!`, 401, true);
     }
 
-     */
 
     return await taskRepository.delete(id);
 };
@@ -46,8 +45,8 @@ exports.findById = async (id) => {
 };
 
 exports.update = async (id, body) => {
-    //TODO remember to make this, get the ids from body and find em through employeeservice
-    const employees = [];
+
+    const employees = await employeeService.findMultipleByIds(body.employeeIds)
 
     const taskToUpdate = {
         name: body.name,
