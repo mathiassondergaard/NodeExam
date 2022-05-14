@@ -1,13 +1,19 @@
-const mongoose = require('mongoose');
+const db = require('../../db');
 
-const Role = mongoose.model(
-    'Role',
-    new mongoose.Schema({
-        name: {
-            type: String,
-            required: [true, 'Role name cannot be empty!']
+const Role = db.sequelize.define('roles', {
+    role: {
+        type: db.Sequelize.STRING,
+        allowNull: false,
+        validate: {
+            notEmpty: {
+                args: true,
+                msg: 'Role cannot be empty'
+            },
         },
-    })
-);
+    },
+});
 
-module.exports = Role;
+module.exports = {
+    Role
+};
+

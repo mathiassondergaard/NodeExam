@@ -63,5 +63,5 @@ module.exports.modGuard = (req, res, next) => {
         }
     }
     logger.debug(`${moduleName} modGuard / user not authorized to access this resource`);
-    throw new AppError('Admin role required - Unauthorized!', 403, true);
+    throw new AppError('Mod role required - Unauthorized!', 403, true);
 };

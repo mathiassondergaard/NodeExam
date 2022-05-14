@@ -1,4 +1,5 @@
 const employeeRepository = require('./employee-repository');
+const authService = require('../auth/auth-service'); //TODO FIX THIS IMPORT
 const {AppError} = require('../../error');
 const db = require('../../db');
 
@@ -19,17 +20,24 @@ exports.create = async (body) => {
     //return true if user is created and send email, else return false
     //const userIsCreated = userService.generateUserForEmployee(transaction, name);
 
-    if (!employee || !userIsCreated) {
+    if (!employee) {
+        await transaction.rollback();
+        throw new AppError('Failed to create employee!', 500, true);
+    }
+
+    const userIsCreated = await authService.createUserForEmployee(employee, transaction);
+
+    if (!userIsCreated) {
         await transaction.rollback();
         throw new AppError('Failed to create employee!', 500, true);
     }
 
     await transaction.commit();
 
-    return employee;
+    return true;
 };
 
-exports.delete = async (id, employeeId) => {
+exports.delete = async (id) => {
     return await employeeRepository.delete(id);
 };
 

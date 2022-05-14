@@ -24,7 +24,7 @@ exports.create = async (employee, transaction) => {
 
     logger.debug(`${moduleName} created employee ${JSON.stringify(_employee)}`);
 
-    return true;
+    return employee.get({plain: true});
 };
 
 exports.findAll = async () => {

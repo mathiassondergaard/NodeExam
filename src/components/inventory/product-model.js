@@ -71,4 +71,18 @@ const Product = db.sequelize.define('products', {
             },
         },
     },
-})
+    location: {
+        type: db.Sequelize.STRING,
+        allowNull: false,
+        validate: {
+            notEmpty: {
+                args: true,
+                msg: 'Location cannot be empty'
+            },
+        },
+    },
+});
+
+module.exports = {
+    Product
+};

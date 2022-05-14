@@ -19,6 +19,7 @@
     "jshint": "^2.13.4",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.2.8",
+    "nodemailer": "^6.7.5",
     "nodemon": "^2.0.16",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
