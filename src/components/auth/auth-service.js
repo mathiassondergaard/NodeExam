@@ -1,3 +1,10 @@
+const {v4: uuid} = require('uuid');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+
+const db = require("../../db");
 const userRepository = require('./user-repository');
 const passwordTokenRepository = require('./passwordtoken-repository');
 const refreshTokenRepository = require('./refreshtoken-repository');
@@ -5,12 +12,6 @@ const roleRepository = require('./role-repository');
 const {AppError} = require('../../error');
 const {logger} = require('../../common/log');
 const {mailer} = require('../../common/mailer');
-const {v4: uuid} = require('uuid');
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
-const jwt = require("jsonwebtoken");
-const fs = require("fs");
-const db = require("../../db");
 const key = fs.readFileSync('private-key.pem');
 
 const moduleName = 'auth-service.js -';
@@ -20,8 +21,6 @@ const moduleName = 'auth-service.js -';
 // USERS
 
 exports.createUserForEmployee = async (employee, roles, transaction) => {
-
-    // Generate random password
 
     const rolesToAdd = [];
 
@@ -35,6 +34,7 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
         return false;
     }
 
+    // Generate random password
     const password = crypto.randomBytes(6).toString('hex')
     const userToCreate = {
         username: generateUsername(employee.name),
@@ -80,7 +80,7 @@ exports.signIn = async (body) => {
     if (!bcrypt.compareSync(body.password, user.password)) {
         return 'PASSWORD_INVALID';
     }
-
+    user.roles = user.roles.map(object => object.role);
     // Find refresh token, generate new one if one doesnt exist
     let refreshToken = await refreshTokenRepository.findByUserId(user.id);
     if (!refreshToken) {
@@ -100,7 +100,10 @@ exports.signIn = async (body) => {
         }
     }
 
-    const token = generateJWT(user);
+    const token = await generateJWT(user);
+    if (!token) {
+        return false;
+    }
 
     return {
         user: user,
@@ -118,6 +121,7 @@ exports.findUserById = async (id) => {
 };
 
 exports.updateUser = async (id, body) => {
+
     const userToUpdate = {
         username: body.username,
         email: body.email,
@@ -127,7 +131,7 @@ exports.updateUser = async (id, body) => {
     return await userRepository.update(id, userToUpdate);
 };
 
-exports.changePasswordOnNewUser = async (username, body) => {
+exports.changePasswordOnNewUser = async (body) => {
     const transaction = await db.sequelize.transaction();
 
     const pwToken = await passwordTokenRepository.findByToken(body.token);
@@ -142,17 +146,17 @@ exports.changePasswordOnNewUser = async (username, body) => {
 
     const newPassword = bcrypt.hashSync(body.password);
 
-    const updated = userRepository.updatePasswordByUsername(username, newPassword, transaction);
-    const deleted = passwordTokenRepository.deleteByToken(body.token)
+    const updatedPassword = userRepository.updatePasswordByUsername(body.username, newPassword, transaction);
+    const deletedToken = passwordTokenRepository.deleteByToken(body.token)
 
-    if (!updated || !deleted) {
+    if (!updatedPassword || !deletedToken) {
         await transaction.rollback();
         return false;
     }
 
     await transaction.commit();
 
-    return true;
+    return {message: 'Successfully changed password!'};
 };
 
 exports.changePassword = async (id, body) => {
@@ -185,7 +189,7 @@ exports.findAllRoles = async () => {
     return await roleRepository.findAll();
 };
 
-exports.findByRole = async (role) => {
+exports.findRoleByRole = async (role) => {
     return await roleRepository.findByRole(role);
 };
 
@@ -195,17 +199,7 @@ exports.deleteRole = async (id) => {
 
 // REFRESH TOKENS
 
-exports.findByToken = async (token) => {
-    const result = await refreshTokenRepository.findByToken(token);
-
-    if (!verifyExpiryDate(result.expiryDate)) {
-        return 'EXPIRED';
-    }
-
-    return result;
-};
-
-exports.refreshAccessToken = async (userId, employeeId, roles, token) => {
+exports.refreshAccessToken = async (token) => {
     const refreshToken = await refreshTokenRepository.findByToken(token);
     if (!refreshToken) {
         return 'INVALID';
@@ -215,10 +209,11 @@ exports.refreshAccessToken = async (userId, employeeId, roles, token) => {
         await refreshTokenRepository.deleteByToken(token);
         return 'EXPIRED';
     }
+
     const user = {
-        id: userId,
-        roles: roles,
-        employee: employeeId
+        id: refreshToken.user.id,
+        roles: refreshToken.user.roles,
+        employee: refreshToken.user.employee.employeeId
     };
 
     const newAccessToken = generateJWT(user);
@@ -229,9 +224,6 @@ exports.refreshAccessToken = async (userId, employeeId, roles, token) => {
     };
 };
 
-exports.deleteRefreshToken = async (token) => {
-    return await refreshTokenRepository.deleteByToken(token);
-};
 
 // PASSWORD TOKENS
 
@@ -249,7 +241,7 @@ const createPasswordToken = async (user, transaction) => {
     return await passwordTokenRepository.create(passwordToken, transaction);
 };
 
-exports.updateExpiryByUserId = async (userId) => {
+exports.updatePwTokenExpiryByUserId = async (userId) => {
     const date = generateExpiryDate(process.env.PW_TOKEN_EXPIRY)
     return await passwordTokenRepository.updateExpiryByUserId(userId, date);
 };

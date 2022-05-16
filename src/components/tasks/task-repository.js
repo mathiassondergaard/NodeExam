@@ -1,7 +1,6 @@
 const {logger} = require('../../common/log');
 const {Task} = require('./task-model');
 const {AppError} = require('../../error');
-const {Employee} = require('../employees');
 
 const moduleName = 'task-repository.js -';
 
@@ -13,7 +12,7 @@ exports.create = async (task) => {
         level: task.level,
         assignedEmployees: task.assignedEmployees
     }, {
-        include: [Employee]
+        include: 'assignedEmployees'
     });
 
     if (_task[0] === 0) {
@@ -29,8 +28,7 @@ exports.create = async (task) => {
 exports.findAll = async () => {
     const tasks = await Task.findAll({
         include: [{
-            model: Employee,
-            as: 'assignedEmployees',
+            association: 'assignedEmployees',
             attributes: ['id', 'name']
         },
         ],
@@ -50,8 +48,7 @@ exports.findAll = async () => {
 exports.findAllByAssignee = async (assignee) => {
     const tasks = await Task.findAll({
         include: [{
-            model: Employee,
-            as: 'assignedEmployees',
+            association: 'assignedEmployees',
             attributes: ['id', 'name']
         },
         ],
@@ -83,7 +80,7 @@ exports.update = async (id, task) => {
         completedAt: task.completedAt,
         assignedEmployees: task.assignedEmployees,
     }, {
-        include: [Employee],
+        include: 'assignedEmployees',
     }, {
         where: {
             id: id
@@ -102,8 +99,7 @@ exports.update = async (id, task) => {
 exports.findById = async (id) => {
     const task = await Task.findByPk(id, {
         include: [{
-            model: Employee,
-            as: 'assignedEmployees',
+            association: 'assignedEmployees',
             attributes: ['id', 'name']
         },
         ],
@@ -136,8 +132,7 @@ exports.findAssigneeById = async (id) => {
 exports.findAllByEmployeeId = async (employeeId) => {
     const tasks = await Task.findAll({
         include: [{
-            model: Employee,
-            as: 'assignedEmployees',
+            association: 'assignedEmployees',
             attributes: ['id', 'name']
         },
         ],

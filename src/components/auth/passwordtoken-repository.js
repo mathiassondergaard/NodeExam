@@ -1,7 +1,6 @@
 const {logger} = require('../../common/log');
-const {PasswordToken} = require('./passwordtoken-model');
+const PasswordToken = require('./passwordtoken-model');
 const {AppError} = require('../../error');
-const {User} = require("./user-model");
 
 const moduleName = 'passwordToken-repository.js -';
 
@@ -11,7 +10,7 @@ exports.create = async (passwordToken, transaction) => {
         expiryDate: passwordToken.expiryDate,
         user: passwordToken.user,
     }, {
-        include: [User],
+        include: 'user',
         transaction
     });
 

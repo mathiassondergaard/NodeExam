@@ -1,4 +1,4 @@
-const {Address} = require('./address-model');
+const Address = require('./address-model');
 
 module.exports = {
     Address

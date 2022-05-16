@@ -1,6 +1,5 @@
 const db = require('../../db');
-//TODO UPDATE this when employees component is done
-const {Employee} = require('../../common/models');
+const {Employee} = require('../../components/employees');
 
 const Task = db.sequelize.define('tasks', {
     name: {
@@ -77,13 +76,13 @@ const Task = db.sequelize.define('tasks', {
     },
 });
 
-Task.hasMany(Employee, {
+Task.belongsToMany(db.sequelize.models.employees, {
     through: 'task_assigned_employees',
     as: 'assignedEmployees',
     foreignKey: 'task_id'
 });
 
-Employee.hasMany(Task, {
+Employee.belongsToMany(Task, {
     through: 'task_assigned_employees',
     as: 'tasks',
     foreignKey: 'employee_id'

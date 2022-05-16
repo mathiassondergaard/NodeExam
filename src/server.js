@@ -3,7 +3,9 @@ const {errorHandler} = require("./error");
 const cors = require('cors');
 require('dotenv').config();
 const db = require('./db');
-//const authRouter = require('./routes/auth.routes');
+const {router: employeeRouter} = require('./components/employees');
+const {router: taskRouter} = require('./components/tasks');
+const {router: authRouter} = require('./components/auth');
 
 const app = express();
 
@@ -33,7 +35,9 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 // Routes
-//authRouter(app);
+authRouter(app);
+taskRouter(app);
+employeeRouter(app);
 
 // Error Handler
 app.use(errorHandler);

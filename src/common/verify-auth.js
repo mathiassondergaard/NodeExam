@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
-const {getJwt} = require('./index');
 const {logger} = require('./log');
 const {AppError} = require("../error");
 const publicKey = fs.readFileSync('public-key.pem');
@@ -9,7 +8,7 @@ const publicKey = fs.readFileSync('public-key.pem');
 const moduleName = 'verify-auth.js -';
 
 // JWT Verification
-module.exports.verifyToken = (includeRoles) => {
+module.exports.verifyToken = () => {
     return async (req, res, next) => {
         const token = getJwt(req);
 
@@ -26,15 +25,11 @@ module.exports.verifyToken = (includeRoles) => {
             throw new AppError('Token not valid - Unauthorized!', 401, true);
         }
 
-        // Include roles used for guards
-        if (includeRoles) {
-            req.roles = decoded.roles;
-        }
-        
+        req.roles = decoded.roles;
         req.userId = decoded._id;
         req.employeeId = decoded.employeeId;
 
-        logger.info(`${moduleName} Token successfully verified, invoking guards`);
+        logger.info(`${moduleName} Token successfully verified, user ${decoded.userId}, employee ${decoded.employeeId}`);
         return next();
     };
 };
@@ -43,7 +38,7 @@ module.exports.verifyToken = (includeRoles) => {
 // Admin guard
 module.exports.adminGuard = (req, res, next) => {
     for (let i = 0; i < req.roles.length; i++) {
-        if (req.roles[i].name === 'admin') {
+        if (req.roles[i].name.toLowerCase() === 'admin') {
             logger.debug(`${moduleName} adminGuard / user authorized to access this resource`);
             next();
             return;
@@ -56,7 +51,7 @@ module.exports.adminGuard = (req, res, next) => {
 // Mod guard
 module.exports.modGuard = (req, res, next) => {
     for (let i = 0; i < req.roles.length; i++) {
-        if (req.roles[i].name === 'moderator') {
+        if (req.roles[i].name.toLowerCase() === 'moderator') {
             logger.debug(`${moduleName} modGuard / user authorized to access this resource`);
             next();
             return;
@@ -65,3 +60,14 @@ module.exports.modGuard = (req, res, next) => {
     logger.debug(`${moduleName} modGuard / user not authorized to access this resource`);
     throw new AppError('Mod role required - Unauthorized!', 403, true);
 };
+
+const getJwt = (req) => {
+    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+        return req.headers.authorization.split(' ')[1];
+    }
+    else if (req.query && req.query.token) {
+        return req.query.token;
+    }
+    return null;
+};
+

@@ -1,6 +1,6 @@
 const {logger} = require('../common/log');
 const {TokenExpiredError, JsonWebTokenError} = require("jsonwebtoken");
-const ValidationError = require('sequelize').Error.ValidationError;
+const {ValidationError} = require('sequelize');
 
 const moduleName = 'error-handler.js -';
 

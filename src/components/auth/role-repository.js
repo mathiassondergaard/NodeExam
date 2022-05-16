@@ -1,5 +1,5 @@
 const {logger} = require('../../common/log');
-const {Role} = require('./role-model');
+const Role = require('./role-model');
 const {AppError} = require('../../error');
 
 const moduleName = 'role-repository.js -';

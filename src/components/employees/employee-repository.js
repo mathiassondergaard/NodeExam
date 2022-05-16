@@ -1,6 +1,5 @@
 const {logger} = require('../../common/log');
-const {Employee} = require('./employee-model');
-const {Address} = require('../../common/models');
+const Employee = require('./employee-model');
 const {AppError} = require('../../error');
 
 const moduleName = 'employee-repository.js -';
@@ -13,7 +12,7 @@ exports.create = async (employee, transaction) => {
         title: employee.title,
         address: employee.address
     }, {
-        include: [Address],
+        include: 'address',
         transaction
     });
 
@@ -65,7 +64,7 @@ exports.update = async (id, employee) => {
         title: employee.title,
         address: employee.address
     }, {
-        include: [Address]
+        include: 'address'
     }, {
         where: {
             id: id
@@ -83,12 +82,10 @@ exports.update = async (id, employee) => {
 
 exports.findById = async (id) => {
     const employee = await Employee.findByPk(id, {
-        include: [{
-            model: Address,
-            as: 'address',
+        include: {
+            association: 'address',
             attributes: ['address', 'city', 'zip', 'country']
         },
-        ],
     });
 
     if (!employee) {

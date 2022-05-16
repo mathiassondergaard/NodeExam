@@ -1,8 +1,6 @@
 const {logger} = require('../../common/log');
-const {User} = require('./user-model');
-const {Role} = require('./role-model')
+const User = require('./user-model');
 const {AppError} = require('../../error');
-const {Employee} = require('../employees');
 
 const moduleName = 'user-repository.js -';
 
@@ -14,7 +12,7 @@ exports.create = async (user, transaction) => {
         employee: user.employee,
         roles: user.roles
     }, {
-        include: [Employee, Role],
+        include: ['employee', 'roles'],
         transaction
     });
 
@@ -31,8 +29,7 @@ exports.create = async (user, transaction) => {
 exports.findAll = async () => {
     const users = await User.findAll({
         include: [{
-            model: Role,
-            as: 'roles',
+            association: 'roles',
             attributes: ['id', 'role']
         },
         ],
@@ -55,7 +52,7 @@ exports.update = async (id, user) => {
         email: user.email,
         roles: user.roles
     }, {
-        include: [Role]
+        include: 'role'
     }, {
         where: {
             id: id
@@ -74,8 +71,7 @@ exports.update = async (id, user) => {
 exports.findById = async (id) => {
     const user = await User.findByPk(id, {
         include: [{
-            model: Role,
-            as: 'roles',
+            association: 'roles',
             attributes: ['id', 'role']
         },
         ],
@@ -95,16 +91,13 @@ exports.findByUsername = async (username) => {
     const user = await User.findOne({
         where: {username: username},
         include: [{
-            model: Role,
-            as: 'roles',
+            association: 'roles',
             attributes: ['id', 'role']
         }, {
-            model: Employee,
-            as: 'employee',
+            association: 'employee',
             attributes: ['id']
         }
         ],
-        nested: true,
     });
 
     if (!user) {

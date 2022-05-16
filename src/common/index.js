@@ -1,9 +1,11 @@
-const getJwt = require('./get-jwt');
 const { apiLimiter, authLimiter } = require('./rate-limiter');
+const verifyAuth = require('./verify-auth');
 
 module.exports = {
-    getJwt,
     apiLimiter,
-    authLimiter
+    authLimiter,
+    verifyJwt: verifyAuth.verifyToken,
+    modGuard: verifyAuth.modGuard,
+    adminGuard: verifyAuth.adminGuard,
 };
 

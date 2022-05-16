@@ -1,5 +1,4 @@
 const db = require('../../db');
-const {User} = require('./user-model');
 
 const RefreshToken = db.sequelize.define('refresh_tokens', {
     token: {
@@ -28,13 +27,11 @@ const RefreshToken = db.sequelize.define('refresh_tokens', {
     },
 });
 
-RefreshToken.belongsTo(User, {
+RefreshToken.belongsTo(db.sequelize.models.users, {
     as: 'user',
     foreignKey: 'user_id',
     onDelete: 'RESTRICT',
 });
 
 
-module.exports = {
-    RefreshToken
-};
+module.exports = RefreshToken;

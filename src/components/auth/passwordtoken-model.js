@@ -1,5 +1,4 @@
 const db = require('../../db');
-const {User} = require('./user-model');
 
 const PasswordToken = db.sequelize.define('password_tokens', {
     token: {
@@ -28,12 +27,10 @@ const PasswordToken = db.sequelize.define('password_tokens', {
     },
 });
 
-PasswordToken.hasOne(User, {
+PasswordToken.belongsTo(db.sequelize.models.users, {
     as: 'user',
     foreignKey: 'user_id',
     onDelete: 'RESTRICT',
 });
 
-module.exports = {
-    PasswordToken
-};
+module.exports = PasswordToken;

@@ -1,6 +1,5 @@
 const db = require('../../db');
 
-
 const Address = db.sequelize.define('addresses', {
     address: {
         type: db.Sequelize.STRING,

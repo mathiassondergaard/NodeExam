@@ -14,8 +14,11 @@ const sequelize = new Sequelize(process.env.WMS_DB_DB, process.env.WMS_DB_USER, 
     }
 });
 
+//TODO: maybe do a init script
+
 const db = {};
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
+
 
 module.exports = db;

@@ -1,6 +1,5 @@
 const db = require('../../db');
-const {Role} = require('./role-model');
-const {Employee} = require('../employees');
+const Role = require('./role-model');
 
 const User = db.sequelize.define('users', {
     username: {
@@ -35,25 +34,23 @@ const User = db.sequelize.define('users', {
     },
 });
 
-User.hasMany(Role, {
+User.belongsToMany(db.sequelize.models.roles, {
     through: 'user_roles',
     as: 'roles',
     foreignKey: 'user_id'
 });
 
-Role.hasMany(User, {
+Role.belongsToMany(db.sequelize.models.users, {
     through: 'user_roles',
     as: 'roles',
     foreignKey: 'role_id'
 })
 
-User.belongsTo(Employee, {
+User.belongsTo(db.sequelize.models.employees, {
     as: 'employee',
     foreignKey: 'employee_id',
     onDelete: 'RESTRICT',
 });
 
-module.exports = {
-    User
-};
+module.exports = User;
 

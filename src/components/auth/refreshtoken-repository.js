@@ -1,17 +1,14 @@
 const {logger} = require('../../common/log');
-const {RefreshToken} = require('./refreshtoken-model');
+const RefreshToken = require('./refreshtoken-model');
 const {AppError} = require('../../error');
-const {User} = require("./user-model");
 
-const moduleName = 'refreshToken-repository.js -';
+const moduleName = 'refreshtoken-repository.js -';
 
 exports.create = async (refreshToken) => {
     const _refreshToken = await RefreshToken.create({
         token: refreshToken.token,
         expiryDate: refreshToken.expiryDate,
-        user: refreshToken.user,
-    }, {
-        include: [User],
+        user_id: refreshToken.user.id,
     });
 
     if (_refreshToken[0] === 0) {
@@ -25,7 +22,25 @@ exports.create = async (refreshToken) => {
 };
 
 exports.findByToken = async (token) => {
-    const refreshToken = await RefreshToken.findOne({where: {token: token}});
+    const refreshToken = await RefreshToken.findOne(
+        {
+            where: {token: token},
+            include: {
+                association: 'user',
+                attributes: ['id', 'employee', 'roles'],
+                include: [
+                    {
+                        association: 'employee',
+                        as: 'employee',
+                        attributes: ['id'],
+                    },
+                    {
+                        association: 'roles',
+                        attributes: ['role'],
+                    }
+                ]
+            },
+        });
 
     if (!refreshToken) {
         logger.error(`${moduleName} refreshToken ${token} not present in db / db error`);
@@ -33,11 +48,11 @@ exports.findByToken = async (token) => {
     }
 
     logger.debug(`${moduleName} retrieved refreshToken by token: ${token} | ${JSON.stringify(refreshToken)}`);
-    return true;
+    return refreshToken;
 };
 
 exports.findByUserId = async (userId) => {
-    const refreshToken = await RefreshToken.findOne({where: {user: userId}});
+    const refreshToken = await RefreshToken.findOne({where: { user_id: userId}});
 
     if (!refreshToken) {
         logger.error(`${moduleName} refreshToken userid ${userId} not present in db / db error`);

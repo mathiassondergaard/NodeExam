@@ -13,7 +13,5 @@ const Role = db.sequelize.define('roles', {
     },
 });
 
-module.exports = {
-    Role
-};
+module.exports = Role;
 
