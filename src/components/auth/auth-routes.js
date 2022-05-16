@@ -26,9 +26,9 @@ module.exports = (app) => {
 
     router.put('/users/:id', asyncHandler(verifyJwt), asyncHandler(controller.updateUser));
 
-    router.patch('/users/password/:id', asyncHandler(verifyJwt), asyncHandler(controller.changePassword));
+    router.patch('/users/:id/password', asyncHandler(verifyJwt), asyncHandler(controller.changePassword));
 
-    router.post('/token/first-login', asyncHandler(controller.changePasswordForNewUser));
+    router.post('/users/token/refresh', asyncHandler(verifyJwt), asyncHandler(controller.refreshAccessToken));
 
     // JWT & Admin
 
@@ -60,19 +60,19 @@ module.exports = (app) => {
         ],
         asyncHandler(controller.findRoleByRole));
 
-    router.delete('/roles',
-        [
-            asyncHandler(verifyJwt),
-            adminGuard,
-        ],
-        asyncHandler(controller.deleteRole));
-
-    router.patch('/pw-token/expiry/:user',
+    router.patch('/pw-token/expiry/user/:user',
         [
             asyncHandler(verifyJwt),
             adminGuard,
         ],
         asyncHandler(controller.updatePwTokenExpiry));
+
+    router.patch('/users/:id/roles',
+        [
+            asyncHandler(verifyJwt),
+            adminGuard,
+        ],
+        asyncHandler(controller.updateUserRoles));
 
     app.use('/api/auth', router);
 

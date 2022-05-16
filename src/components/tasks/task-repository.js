@@ -1,5 +1,7 @@
 const {logger} = require('../../common/log');
-const {Task} = require('./task-model');
+const Task = require('./task-model');
+const db = require('../../db');
+const {QueryTypes} = db.sequelize;
 const {AppError} = require('../../error');
 
 const moduleName = 'task-repository.js -';
@@ -10,9 +12,6 @@ exports.create = async (task) => {
         description: task.description,
         assignee: task.assignee,
         level: task.level,
-        assignedEmployees: task.assignedEmployees
-    }, {
-        include: 'assignedEmployees'
     });
 
     if (_task[0] === 0) {
@@ -20,6 +19,7 @@ exports.create = async (task) => {
         throw new AppError(`Create task failed`, 500, true);
     }
 
+    await _task.setAssignedEmployees(task.assignedEmployees)
     logger.debug(`${moduleName} created task ${JSON.stringify(_task)}`);
 
     return true;
@@ -32,7 +32,6 @@ exports.findAll = async () => {
             attributes: ['id', 'name']
         },
         ],
-        nested: true,
     });
 
     if (!tasks || tasks.length === 0) {
@@ -42,21 +41,19 @@ exports.findAll = async () => {
 
     logger.debug(`${moduleName} found all tasks successfully`);
 
-    return tasks;
+    return tasks.map(task => task.get({plain: true}));
 };
 
 exports.findAllByAssignee = async (assignee) => {
     const tasks = await Task.findAll({
+        where: {
+            assignee: assignee
+        },
         include: [{
             association: 'assignedEmployees',
             attributes: ['id', 'name']
         },
         ],
-        nested: true,
-    }, {
-        where: {
-            assignee: assignee
-        },
     });
 
     if (!tasks || tasks.length === 0) {
@@ -66,25 +63,19 @@ exports.findAllByAssignee = async (assignee) => {
 
     logger.debug(`${moduleName} found all tasks successfully by assignee ${assignee}`);
 
-    return tasks;
+    return tasks.map(task => task.get({plain: true}));
 };
 
 exports.update = async (id, task) => {
     const _task = await Task.update({
         name: task.name,
         description: task.description,
-        assignee: task.assignee,
         level: task.level,
         status: task.status,
-        startedAt: task.startedAt,
-        completedAt: task.completedAt,
-        assignedEmployees: task.assignedEmployees,
-    }, {
-        include: 'assignedEmployees',
     }, {
         where: {
             id: id
-        }
+        },
     });
 
     if (!_task || _task[0] === 0) {
@@ -96,6 +87,19 @@ exports.update = async (id, task) => {
     return {message: `Task ${id} successfully updated!`};
 };
 
+exports.updateAssignedEmployees = async (id, assignedEmployees) => {
+    const task = await Task.findByPk(id,{});
+    const updated = await task.setAssignedEmployees(assignedEmployees);
+
+    if (!task || !updated || updated[0] === 0) {
+        logger.error(`${moduleName} Task ${id} not present in db / db error`);
+        throw new AppError(`Task ${id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} updated task assigned employees: ${id} | new employees ${JSON.stringify(assignedEmployees)}`);
+    return {message: 'Successfully updated task assigned employees!'};
+}
+
 exports.findById = async (id) => {
     const task = await Task.findByPk(id, {
         include: [{
@@ -103,7 +107,6 @@ exports.findById = async (id) => {
             attributes: ['id', 'name']
         },
         ],
-        nested: true,
     });
 
     if (!task) {
@@ -122,34 +125,54 @@ exports.findAssigneeById = async (id) => {
 
     if (!assignee) {
         logger.error(`${moduleName} assignee belonging to task ${id} not present in db / db error`);
-        return null;
+        return false;
     }
 
-    logger.debug(`${moduleName} retrieved task assignee by id: ${id} | ${JSON.stringify(task)}`);
+    logger.debug(`${moduleName} retrieved task assignee by id: ${id} | ${JSON.stringify(assignee)}`);
     return assignee.get({plain: true}).assignee;
 };
 
 exports.findAllByEmployeeId = async (employeeId) => {
+    const query = `SELECT task_id FROM task_assigned_employees WHERE employee_id = ${employeeId}`;
+
+    const tasksToFind = await db.sequelize.query(query, { type: QueryTypes.SELECT });
+    if (!tasksToFind) {
+        logger.error(`${moduleName} tasks by employee id ${employeeId} not present in db / db error`);
+        throw new AppError(`Task by employee id ${employeeId} not found!`, 404, true);
+    }
+
     const tasks = await Task.findAll({
+        where: {
+            id: tasksToFind.map(task => task.task_id)
+        },
         include: [{
             association: 'assignedEmployees',
-            attributes: ['id', 'name']
+            attributes: ['id', 'name'],
         },
         ],
-        nested: true,
-    }, {
-        through: { where: { employeeId: employeeId }},
     });
 
-    if (!tasks) {
+    if (!tasks || tasks.length === 0) {
         logger.error(`${moduleName} tasks by employee id ${employeeId} not present in db / db error`);
         throw new AppError(`Task by employee id ${employeeId} not found!`, 404, true);
     }
 
     logger.debug(`${moduleName} retrieved task by employee id ${employeeId}`);
-    return tasks;
+    return tasks.map(task => task.get({plain: true}));
 };
 
+exports.checkIfEmployeeIsAssignedToTask = async (id, employeeId) => {
+    const query = `SELECT task_id FROM task_assigned_employees WHERE task_id = ${id} AND employee_id = ${employeeId}`;
+
+    const isEmployeeAssigned = await db.sequelize.query(query, { type: QueryTypes.SELECT });
+
+    if (!isEmployeeAssigned) {
+        logger.error(`${moduleName} employee is not assigned to task ${id} employee ${employeeId}`);
+        return false;
+    }
+
+    return true;
+};
 
 exports.updateStatus = async (id, status) => {
     const task = await Task.update({
@@ -167,6 +190,24 @@ exports.updateStatus = async (id, status) => {
 
     logger.debug(`${moduleName} updated task status with id ${id}: ${JSON.stringify(status)}`);
     return {message: `Task ${id} status successfully updated! New status: ${status}`};
+};
+
+exports.updateLevel = async (id, level) => {
+    const task = await Task.update({
+        level: level,
+    }, {
+        where: {
+            id: id
+        }
+    });
+
+    if (!task || task[0] === 0) {
+        logger.error(`${moduleName} task to update level not found id: ${id}`);
+        throw new AppError(`Task ${id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} updated task level with id ${id}: ${JSON.stringify(level)}`);
+    return {message: `Task ${id} level successfully updated! New level: ${level}`};
 };
 
 exports.updateCompletedAt = async (id, date) => {

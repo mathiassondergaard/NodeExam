@@ -11,7 +11,7 @@ exports.create = async (req, res, next) => {
         return next(new AppError('Please provide a body!', 400, true));
     }
 
-    const created = await taskService.create(req.body);
+    const created = await taskService.create(req.body, req.employeeId);
 
     if (!created) {
         logger.error(`${moduleName} failed to create task`);
@@ -70,7 +70,7 @@ exports.update = async (req, res, next) => {
         return next(new AppError('Please provide a body!', 400, true));
     }
 
-    const updated = await taskService.update(req.params.id, req.body);
+    const updated = await taskService.update(req.params.id, req.body, req.employeeId);
 
     if (!updated) {
         logger.error(`${moduleName} failed to update task`);
@@ -81,13 +81,31 @@ exports.update = async (req, res, next) => {
     res.status(200).send(updated);
 };
 
+exports.updateAssignedEmployees = async (req, res, next) => {
+
+    if (!Object.keys(req.body).length) {
+        logger.error(`${moduleName} empty body received`);
+        return next(new AppError('Please provide a body!', 400, true));
+    }
+
+    const updated = await taskService.updateAssignedEmployees(req.params.id, req.employeeId, req.body);
+
+    if (!updated) {
+        logger.error(`${moduleName} failed to update task assigned employees`);
+        return next(new AppError('Failed to update task!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully updated task assigned employees ${req.params.id}`);
+    res.status(200).send(updated);
+};
+
 exports.updateStatus = async (req, res, next) => {
     if (!req.params.status) {
         logger.error(`${moduleName} no status received`);
         return next(new AppError('Please provide a status!', 400, true));
     }
 
-    const updated = await taskService.updateStatus(req.params.id, req.params.status);
+    const updated = await taskService.updateStatus(req.params.id, req.params.status, req.employeeId);
 
     if (!updated) {
         logger.error(`${moduleName} failed to update task status`);
@@ -98,8 +116,25 @@ exports.updateStatus = async (req, res, next) => {
     res.status(200).send(updated);
 };
 
+exports.updateLevel = async (req, res, next) => {
+    if (!req.params.level) {
+        logger.error(`${moduleName} no level received`);
+        return next(new AppError('Please provide a level!', 400, true));
+    }
+
+    const updated = await taskService.updateLevel(req.params.id, req.params.level, req.employeeId);
+
+    if (!updated) {
+        logger.error(`${moduleName} failed to update task level`);
+        return next(new AppError('Failed to update task level!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully updated task level ${req.params.id}, ${req.params.level}`);
+    res.status(200).send(updated);
+};
+
 exports.updateCompletedAt = async (req, res, next) => {
-    const updated = await taskService.updateStatus(req.params.id, req.body.date);
+    const updated = await taskService.updateCompletedAt(req.params.id, req.body.date, req.employeeId);
 
     if (!updated) {
         logger.error(`${moduleName} failed to update task completed at`);
@@ -111,7 +146,7 @@ exports.updateCompletedAt = async (req, res, next) => {
 };
 
 exports.updateStartedAt = async (req, res, next) => {
-    const updated = await taskService.updateStatus(req.params.id, req.body.date);
+    const updated = await taskService.updateStartedAt(req.params.id, req.body.date, req.employeeId);
 
     if (!updated) {
         logger.error(`${moduleName} failed to update task started at`);

@@ -1,6 +1,6 @@
 const controller = require('./task-controller');
 const router = require('express').Router();
-const {apiLimiter} = require('../../common');
+const {apiLimiter, adminGuard, verifyJwt} = require('../../common');
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
@@ -14,29 +14,36 @@ module.exports = (app) => {
         next();
     });
 
-    // Everything under here just needs JWT
+    // JWT
 
-    router.post('/', asyncHandler(controller.create)); //maybe needs modguard/adminguard
+    router.post('/', asyncHandler(verifyJwt), asyncHandler(controller.create));
 
-    router.delete('/:id', asyncHandler(controller.delete));
+    router.delete('/:id', asyncHandler(verifyJwt), asyncHandler(controller.delete));
 
-    router.get('/:id', asyncHandler(controller.findById));
+    router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
-    router.patch('/:id/started-at', asyncHandler(controller.updateStartedAt));
+    router.patch('/:id/started-at', asyncHandler(verifyJwt), asyncHandler(controller.updateStartedAt));
 
-    router.patch('/:id/completed-at', asyncHandler(controller.updateCompletedAt));
+    router.patch('/:id/level/:level', asyncHandler(verifyJwt), asyncHandler(controller.updateLevel));
 
-    router.get('/employee/:employeeId', asyncHandler(controller.findAllByEmployeeId));
+    router.patch('/:id/completed-at', asyncHandler(verifyJwt), asyncHandler(controller.updateCompletedAt));
 
-    router.get('/assignee/:assignee', asyncHandler(controller.findAllByAssignee));
+    router.get('/employee/:employeeId', asyncHandler(verifyJwt), asyncHandler(controller.findAllByEmployeeId));
 
-    // Everything under here needs modguard/adminguard as well
+    router.get('/assignee/:assignee', asyncHandler(verifyJwt), asyncHandler(controller.findAllByAssignee));
 
-    router.put('/:id', asyncHandler(controller.update));
+    router.patch('/:id/assigned-employees', asyncHandler(verifyJwt), asyncHandler(controller.updateAssignedEmployees));
 
-    router.get('/', asyncHandler(controller.findAll));
+    router.patch('/:id/status/:status', asyncHandler(verifyJwt), asyncHandler(controller.updateStatus));
 
-    router.patch('/:id/status/:status', asyncHandler(controller.updateStatus));
+    router.put('/:id',asyncHandler(verifyJwt), asyncHandler(controller.update));
+
+    // Admin
+
+    router.get('/', [
+        asyncHandler(verifyJwt),
+        adminGuard
+    ], asyncHandler(controller.findAll));
 
     app.use('/api/resources/tasks', router);
 

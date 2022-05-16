@@ -15,41 +15,42 @@ module.exports = (err, req, res, next) => {
 };
 
 const handleErr = (err, res, production) => {
-    switch (err) {
-        case err instanceof ValidationError:
-            const errors = err.errors.map(error => {
-                return {
-                    message: error.message,
-                    model: error.path,
-                    givenValue: error.value,
-                };
-            });
-            logger.error(`${moduleName} validation error ${JSON.stringify(errors)}`);
-            return res.status(400).json(errors);
-        case err instanceof TokenExpiredError:
-            logger.error(`${moduleName} access token is expired`);
-            res.status(401).json({message: 'Access token was expired - Unauthorized!'});
-            return;
-        case err instanceof JsonWebTokenError:
-            logger.error(`${moduleName} access token not valid`);
-            res.status(401).json({message: 'Access token not valid - Unauthorized!'});
-            return;
-        default:
-            if (!production) {
-                logger.error(`${moduleName} ${JSON.stringify({status: err.status, message: err.message})}`);
-                handleNotOperationalErr(err);
-                return res.status(err.statusCode).json({
-                    status: err.status,
-                    error: err,
-                    message: err.message,
-                });
-            }
-            handleNotOperationalErr(err);
-            return res.status(err.statusCode).send({
-                status: err.status,
-                message: err.message,
-            });
+    if (err instanceof ValidationError) {
+        const errors = err.errors.map(error => {
+            return {
+                message: error.message,
+                model: error.path,
+                givenValue: error.value,
+            };
+        });
+        logger.error(`${moduleName} validation error ${JSON.stringify(errors)}`);
+        return res.status(400).json(errors);
     }
+    else if (err instanceof TokenExpiredError) {
+        logger.error(`${moduleName} access token is expired`);
+        res.status(401).json({message: 'Access token was expired - Unauthorized!'});
+        return;
+    }
+    else if (err instanceof JsonWebTokenError) {
+        logger.error(`${moduleName} access token not valid`);
+        res.status(401).json({message: 'Access token not valid - Unauthorized!'});
+        return;
+    }
+
+    if (!production) {
+        logger.error(`${moduleName} ${JSON.stringify({status: err.status, message: err.message})}`);
+        handleNotOperationalErr(err);
+        return res.status(err.statusCode).json({
+            status: err.status,
+            error: err,
+            message: err.message,
+        });
+    }
+    handleNotOperationalErr(err);
+    return res.status(err.statusCode).send({
+        status: err.status,
+        message: err.message,
+    });
 };
 
 const handleNotOperationalErr = (err) => {

@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 
 module.exports.sendEmail = async (email, subject, html) => {
     // Send the email
-    logger.info(`${moduleName} subject: ${subject} email sent to ${email}`);
+    logger.info(`${moduleName} subject: '${subject}' email sent to ${email}`);
     await transporter.sendMail({
         from: process.env.MAIL_USER,
         to: email,

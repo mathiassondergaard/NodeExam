@@ -103,16 +103,23 @@ exports.changePasswordForNewUser = async (req, res, next) => {
 
 exports.changePassword = async (req, res, next) => {
 
-    if (req.userId !== req.params.id) {
-        logger.error(`${moduleName} user pw could not be updated due to permissions`);
-        return next(AppError('Failed to update password - permission denied!', 401, true));
-    }
-
-    const updated = await authService.changePassword(req.params.id, req.body);
+    const updated = await authService.changePassword(req.params.id, req.userId, req.body);
 
     if (!updated) {
-        logger.error(`${moduleName} update pw passwords does not match ${req.params.id}`);
-        return next(new AppError('Passwords do not match!', 401, true));
+        logger.error(`${moduleName} update pw failed ${req.params.id}`);
+        return next(new AppError('Failed to update password!', 500, true));
+    }
+
+    res.status(200).send(updated);
+};
+
+exports.updateUserRoles = async (req, res, next) => {
+
+    const updated = await authService.updateUserRoles(req.params.id, req.body.roles);
+
+    if (!updated) {
+        logger.error(`${moduleName} failed to update user roles`);
+        return next(new AppError('Failed to update user roles!', 500, true));
     }
 
     res.status(200).send(updated);
@@ -156,17 +163,6 @@ exports.findRoleByRole = async (req, res, next) => {
     res.status(200).send(role);
 };
 
-exports.deleteRole = async (req, res, next) => {
-    const deleted = await authService.deleteRole(req.params.id);
-
-    if (!deleted) {
-        logger.error(`${moduleName} failed to delete role`);
-        return next(new AppError('Failed to delete role!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully deleted role ${JSON.stringify(req.params.id)}`);
-    return res.status(200).send(deleted);
-};
 
 exports.updatePwTokenExpiry = async (req, res, next) => {
 
@@ -188,7 +184,13 @@ exports.refreshAccessToken = async (req, res, next) => {
         return next(new AppError('Please provide a body!', 400, true));
     }
 
-    const refreshed = await authService.refreshAccessToken(req.params)
+    const jwtInfo = {
+        userId: req.userId,
+        roles: req.roles,
+        employee: req.employeeId
+    };
+
+    const refreshed = await authService.refreshAccessToken(req.body.token, jwtInfo);
 
     switch (refreshed) {
         case 'INVALID':

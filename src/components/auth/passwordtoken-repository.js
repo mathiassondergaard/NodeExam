@@ -8,9 +8,7 @@ exports.create = async (passwordToken, transaction) => {
     const _passwordToken = await PasswordToken.create({
         token: passwordToken.token,
         expiryDate: passwordToken.expiryDate,
-        user: passwordToken.user,
     }, {
-        include: 'user',
         transaction
     });
 
@@ -18,6 +16,8 @@ exports.create = async (passwordToken, transaction) => {
         logger.error(`${moduleName} could not create passwordToken`);
         return false;
     }
+
+    await _passwordToken.setUser(passwordToken.userId, {transaction});
 
     logger.debug(`${moduleName} created passwordToken ${JSON.stringify(_passwordToken)}`);
 
@@ -33,14 +33,17 @@ exports.findByToken = async (token) => {
     }
 
     logger.debug(`${moduleName} retrieved passwordToken by token: ${token} | ${JSON.stringify(passwordToken)}`);
-    return true;
+    return passwordToken;
 };
 
-exports.updateExpiryByUserId = async (userId, date) => {
+exports.updateExpiryByUserId = async (userId, newDate) => {
+
     const passwordToken = await PasswordToken.update({
-        date: date,
+        expiryDate: newDate
     }, {
-        where: { user: userId }
+        where: {
+            user_id: userId
+        },
     });
 
     if (!passwordToken || passwordToken[0] === 0) {
@@ -48,8 +51,8 @@ exports.updateExpiryByUserId = async (userId, date) => {
         throw new AppError(`PasswordToken ${userId} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated passwordToken status with date ${userId}: ${JSON.stringify(date)}`);
-    return {message: `PW token userid ${userId} date successfully updated! New date: ${date}`};
+    logger.debug(`${moduleName} updated passwordToken status with date ${userId}: ${JSON.stringify(newDate)}`);
+    return {message: `PW token userid ${userId} expiry date successfully updated! New date: ${newDate}`};
 };
 
 exports.deleteByToken = async (token, transaction) => {

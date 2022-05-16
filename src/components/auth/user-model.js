@@ -37,7 +37,8 @@ const User = db.sequelize.define('users', {
 User.belongsToMany(db.sequelize.models.roles, {
     through: 'user_roles',
     as: 'roles',
-    foreignKey: 'user_id'
+    foreignKey: 'user_id',
+    onDelete: 'CASCADE'
 });
 
 Role.belongsToMany(db.sequelize.models.users, {
@@ -49,7 +50,7 @@ Role.belongsToMany(db.sequelize.models.users, {
 User.belongsTo(db.sequelize.models.employees, {
     as: 'employee',
     foreignKey: 'employee_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
 });
 
 module.exports = User;

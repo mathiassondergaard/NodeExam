@@ -45,9 +45,10 @@ const Employee = db.sequelize.define('employees', {
     },
 });
 
-Employee.belongsTo(Address, {
-    foreignKey: 'address_id',
-    as: 'address'
+Employee.hasOne(Address, {
+    foreignKey: 'employee_id',
+    as: 'address',
+    onDelete: 'CASCADE',
 });
 
 

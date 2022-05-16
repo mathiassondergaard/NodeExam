@@ -42,6 +42,11 @@ employeeRouter(app);
 // Error Handler
 app.use(errorHandler);
 
+process.on('uncaughtException', err => {
+    console.error(err, 'Uncaught Exception thrown');
+    process.exit(1);
+});
+
 // Init
 const PORT = process.env.WMS_PORT || 8087;
 app.listen(PORT, () => {

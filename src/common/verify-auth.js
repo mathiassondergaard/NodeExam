@@ -8,8 +8,7 @@ const publicKey = fs.readFileSync('public-key.pem');
 const moduleName = 'verify-auth.js -';
 
 // JWT Verification
-module.exports.verifyToken = () => {
-    return async (req, res, next) => {
+module.exports.verifyToken = async (req, res, next) => {
         const token = getJwt(req);
 
         // Return 403 if token is not provided
@@ -26,19 +25,18 @@ module.exports.verifyToken = () => {
         }
 
         req.roles = decoded.roles;
-        req.userId = decoded._id;
+        req.userId = decoded.id;
         req.employeeId = decoded.employeeId;
 
-        logger.info(`${moduleName} Token successfully verified, user ${decoded.userId}, employee ${decoded.employeeId}`);
+        logger.info(`${moduleName} Token successfully verified, user ${decoded.id}, employee ${decoded.employeeId}`);
         return next();
-    };
 };
 
 
 // Admin guard
 module.exports.adminGuard = (req, res, next) => {
     for (let i = 0; i < req.roles.length; i++) {
-        if (req.roles[i].name.toLowerCase() === 'admin') {
+        if (req.roles[i].toLowerCase() === 'admin') {
             logger.debug(`${moduleName} adminGuard / user authorized to access this resource`);
             next();
             return;
@@ -51,7 +49,7 @@ module.exports.adminGuard = (req, res, next) => {
 // Mod guard
 module.exports.modGuard = (req, res, next) => {
     for (let i = 0; i < req.roles.length; i++) {
-        if (req.roles[i].name.toLowerCase() === 'moderator') {
+        if (req.roles[i].toLowerCase() === 'moderator') {
             logger.debug(`${moduleName} modGuard / user authorized to access this resource`);
             next();
             return;

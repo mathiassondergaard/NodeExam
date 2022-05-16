@@ -1,6 +1,6 @@
 const controller = require('./employee-controller');
 const router = require('express').Router();
-const {apiLimiter} = require('../../common');
+const {apiLimiter, adminGuard, verifyJwt} = require('../../common');
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
@@ -14,18 +14,29 @@ module.exports = (app) => {
         next();
     });
 
-    // Everything under here just needs JWT
+    // JWT
 
-    router.get('/:id', asyncHandler(controller.findById));
+    router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
-    router.put('/:id', asyncHandler(controller.update));
+    router.put('/:id', asyncHandler(verifyJwt), asyncHandler(controller.update));
 
-    // Everything under here needs adminguard as well
+    // Admin
 
-    router.post('/', asyncHandler(controller.create)); //maybe needs modguard/adminguard
+    router.post('/', [
+        asyncHandler(verifyJwt),
+        adminGuard
+    ], asyncHandler(controller.create)); //maybe needs modguard/adminguard
 
-    router.get('/', asyncHandler(controller.findAll));
+    router.delete('/:id', [
+        asyncHandler(verifyJwt),
+        adminGuard
+    ], asyncHandler(controller.delete)); //maybe needs modguard/adminguard
 
-    app.use('/api/resources/tasks', router);
+    router.get('/', [
+        asyncHandler(verifyJwt),
+        adminGuard
+    ], asyncHandler(controller.findAll));
+
+    app.use('/api/resources/employees', router);
 
 };

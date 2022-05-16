@@ -1,68 +1,85 @@
 const taskRepository = require('./task-repository');
 const {AppError} = require('../../error');
-const {employeeService} = require('../employees')
+const {service: employeeService} = require('../employees')
 
+exports.create = async (body, employeeId) => {
 
-exports.create = async (body) => {
+    const assignee = await employeeService.findNameAndTitleById(employeeId);
 
-    const employees = await employeeService.findMultipleByIds(body.employeeIds)
+    if (!assignee) {
+        return false;
+    }
 
     // If level is null, default will be used
     const taskToCreate = {
         name: body.name,
         description: body.description,
-        assignee: body.assignee,
+        assignee: assignee.name,
         level: body.level,
-        assignedEmployees: employees,
+        assignedEmployees: body.assignedEmployees,
     };
 
     return await taskRepository.create(taskToCreate);
 };
 
+exports.updateAssignedEmployees = async (id, employeeId, body) => {
+    await validatePermissionsBasedOnAssignee(id, employeeId, 'update');
+
+    const updated = await taskRepository.updateAssignedEmployees(id, body.assignedEmployees);
+
+    if (!updated) {
+        return false;
+    }
+
+    return updated;
+};
+
 exports.delete = async (id, employeeId) => {
-
-    const employee = employeeService.findById(employeeId)
-    const assignee = await taskRepository.findAssigneeById(id);
-
-    if (!assignee) {
-        throw new AppError(`Task ${id} could not be deleted!`, 500, true);
-    }
-    // Only assignee / supervisor/manager can delete tasks
-    if (!employee.name === assignee || (employee.title === 'Supervisor' || 'Manager')) {
-        throw new AppError(`Task ${id} could not be deleted, invalid permission!`, 401, true);
-    }
-
+    await validatePermissionsBasedOnAssignee(id, employeeId, 'delete');
 
     return await taskRepository.delete(id);
 };
 
 exports.findAll = async () => {
-    return await taskRepository.findAll();
+    const tasks = await taskRepository.findAll();
+
+    if (!tasks) {
+        return false;
+    }
+
+    tasks.forEach(task => task.assignedEmployees = task.assignedEmployees.map(employee => {return {id: employee.id, name: employee.name}}));
+
+    return tasks;
 };
 
 exports.findById = async (id) => {
-    return await taskRepository.findById(id);
+    const task = await taskRepository.findById(id);
+
+    if (!task) {
+        return false;
+    }
+
+    task.assignedEmployees = task.assignedEmployees.map(employee => {return {id: employee.id, name: employee.name}});
+
+    return task;
 };
 
-exports.update = async (id, body) => {
-
-    const employees = await employeeService.findMultipleByIds(body.employeeIds)
+exports.update = async (id, body, employeeId) => {
+    await validatePermissionsBasedOnAssignee(id, employeeId, 'update');
 
     const taskToUpdate = {
         name: body.name,
         description: body.description,
-        assignee: body.assignee,
         level: body.level,
         status: body.status,
-        startedAt: body.startedAt,
-        completedAt: body.completedAt,
-        assignedEmployees: employees,
     };
 
     return await taskRepository.update(id, taskToUpdate);
 };
 
-exports.updateStatus = async (id, status) => {
+exports.updateStatus = async (id, status, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+
     const statusValidation = ['NOT-STARTED', 'ON-GOING', 'POSTPONED', 'COMPLETED'];
 
     if (!statusValidation.includes(status.toUpperCase())) {
@@ -72,14 +89,30 @@ exports.updateStatus = async (id, status) => {
     return await taskRepository.updateStatus(id, status.toUpperCase());
 };
 
-exports.updateStartedAt = async (id, date) => {
+exports.updateLevel = async (id, level, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+
+    const statusValidation = ['LOW', 'MEDIUM', 'HIGH'];
+
+    if (!statusValidation.includes(level.toUpperCase())) {
+        throw new AppError(`Failed to update level - invalid level! ${level}`, 500, true);
+    }
+
+    return await taskRepository.updateLevel(id, level.toUpperCase());
+};
+
+exports.updateStartedAt = async (id, date, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+
     if (!date) {
         date = new Date();
     }
     return await taskRepository.updateStartedAt(id, date);
 };
 
-exports.updateCompletedAt = async (id, date) => {
+exports.updateCompletedAt = async (id, date, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+
     if (!date) {
         date = new Date();
     }
@@ -87,9 +120,57 @@ exports.updateCompletedAt = async (id, date) => {
 };
 
 exports.findAllByEmployeeId = async (employeeId) => {
-    return await taskRepository.findAllByEmployeeId(employeeId);
+    const tasks = await taskRepository.findAllByEmployeeId(employeeId);
+
+    if (!tasks) {
+        return false;
+    }
+
+    tasks.forEach(task => task.assignedEmployees = task.assignedEmployees.map(employee => {return {id: employee.id, name: employee.name}}));
+
+    return tasks;
 };
 
 exports.findAllByAssignee = async (assignee) => {
-    return await taskRepository.findAllByAssignee(assignee);
+    const tasks = await taskRepository.findAllByAssignee(assignee);
+
+    if (!tasks) {
+        return false;
+    }
+
+    tasks.forEach(task => task.assignedEmployees = task.assignedEmployees.map(employee => {return {id: employee.id, name: employee.name}}));
+
+    return tasks;
+};
+
+// Used to avoid duplicate code, validates based on assignee
+// is the same as the employee doing the action and
+// the level of the employee
+const validatePermissionsBasedOnAssignee = async (id, employeeId, method) => {
+    const assignee = await taskRepository.findAssigneeById(id);
+    const employee = await employeeService.findNameAndTitleById(employeeId)
+
+    if (!assignee || !employee) {
+        throw new AppError(`Task ${id} could not be ${method}d!`, 500, true);
+    }
+
+    if (employee.name.toLowerCase() !== assignee.toLowerCase()) {
+        if ((employee.title.toLowerCase() !== 'supervisor' || 'manager')) {
+            throw new AppError(`Task ${id} could not be ${method}d, invalid permission!`, 401, true);
+        }
+    }
+};
+
+const validatePermissionsBasedOnAssignedEmployee = async (id, employeeId, method) => {
+    const employee = await employeeService.findNameAndTitleById(employeeId)
+
+    if (!employee) {
+        throw new AppError(`Task ${id} could not be ${method}d!`, 500, true);
+    }
+
+    if (!await taskRepository.checkIfEmployeeIsAssignedToTask(id, employeeId)) {
+        if ((employee.title.toLowerCase() !== 'supervisor' || 'manager')) {
+            throw new AppError(`Task ${id} could not be ${method}d, invalid permission!`, 401, true);
+        }
+    }
 };

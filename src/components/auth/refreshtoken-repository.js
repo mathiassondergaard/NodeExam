@@ -25,21 +25,6 @@ exports.findByToken = async (token) => {
     const refreshToken = await RefreshToken.findOne(
         {
             where: {token: token},
-            include: {
-                association: 'user',
-                attributes: ['id', 'employee', 'roles'],
-                include: [
-                    {
-                        association: 'employee',
-                        as: 'employee',
-                        attributes: ['id'],
-                    },
-                    {
-                        association: 'roles',
-                        attributes: ['role'],
-                    }
-                ]
-            },
         });
 
     if (!refreshToken) {
@@ -60,7 +45,7 @@ exports.findByUserId = async (userId) => {
     }
 
     logger.debug(`${moduleName} retrieved refreshToken by: userid ${userId} | ${JSON.stringify(refreshToken)}`);
-    return true;
+    return refreshToken.get({plain: true}).token;
 };
 
 exports.deleteByToken = async (token) => {

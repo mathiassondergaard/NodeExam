@@ -48,10 +48,10 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
     const passwordToken = await createPasswordToken(user, transaction);
 
     if (user && passwordToken) {
-        await mailer.sendEmail(
+        return await mailer.sendEmail(
             userToCreate.email,
-            'Request to reset Password',
-            `<h1>Hello new employee!.</h1>
+            'WMS - An account was created for you',
+            `<h1>Hello new employee!</h1>
         <br/>
         <p>In order to access the WMS, you must reset your password.<p>
         <br/>
@@ -66,6 +66,7 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
         <br/>
         <p>Kind regards</p>`
         );
+
     }
 
     return false;
@@ -80,7 +81,9 @@ exports.signIn = async (body) => {
     if (!bcrypt.compareSync(body.password, user.password)) {
         return 'PASSWORD_INVALID';
     }
+
     user.roles = user.roles.map(object => object.role);
+
     // Find refresh token, generate new one if one doesnt exist
     let refreshToken = await refreshTokenRepository.findByUserId(user.id);
     if (!refreshToken) {
@@ -100,7 +103,7 @@ exports.signIn = async (body) => {
         }
     }
 
-    const token = await generateJWT(user);
+    const token = await generateJWT(user, user.employee.id);
     if (!token) {
         return false;
     }
@@ -113,11 +116,45 @@ exports.signIn = async (body) => {
 };
 
 exports.findAllUsers = async () => {
-    return await userRepository.findAll();
+    const users = await userRepository.findAll();
+
+    if (!users) {
+        return false;
+    }
+
+    users.forEach(user => {
+        user.roles = user.roles.map(object => object.role);
+    });
+
+    return users;
 };
 
 exports.findUserById = async (id) => {
-    return await userRepository.findById(id);
+    const user = await userRepository.findById(id);
+
+    if (!user) {
+        return false;
+    }
+
+    user.roles = user.roles.map(object => object.role);
+
+    return user;
+};
+
+exports.updateUserRoles = async (id, roles) => {
+    const rolesToUpdate = [];
+
+    //TODO PROBABLY NEEDS SOME VALIDAITON OF SOME SORTS
+    for (const role of roles) {
+        const result = await roleRepository.findByRole(role);
+        rolesToUpdate.push(result);
+    }
+
+    if (!rolesToUpdate) {
+        return false;
+    }
+
+    return await userRepository.updateRoles(id, rolesToUpdate);
 };
 
 exports.updateUser = async (id, body) => {
@@ -125,7 +162,6 @@ exports.updateUser = async (id, body) => {
     const userToUpdate = {
         username: body.username,
         email: body.email,
-        roles: body
     };
 
     return await userRepository.update(id, userToUpdate);
@@ -146,8 +182,8 @@ exports.changePasswordOnNewUser = async (body) => {
 
     const newPassword = bcrypt.hashSync(body.password);
 
-    const updatedPassword = userRepository.updatePasswordByUsername(body.username, newPassword, transaction);
-    const deletedToken = passwordTokenRepository.deleteByToken(body.token)
+    const updatedPassword = await userRepository.updatePasswordByUsername(body.username, newPassword, transaction);
+    const deletedToken = await passwordTokenRepository.deleteByToken(body.token, transaction)
 
     if (!updatedPassword || !deletedToken) {
         await transaction.rollback();
@@ -159,15 +195,19 @@ exports.changePasswordOnNewUser = async (body) => {
     return {message: 'Successfully changed password!'};
 };
 
-exports.changePassword = async (id, body) => {
+exports.changePassword = async (id, currentUserId, body) => {
+    if (currentUserId !== parseInt(id)) {
+        throw new AppError('Password could not be updated - invalid permission!', 401, true);
+    }
+
     const userPassword = await userRepository.findPasswordById(id);
     if (!bcrypt.compareSync(body.oldPassword, userPassword)) {
-        return false;
+        throw new AppError('Old password does not match!', 401, true);
     }
 
     const newPassword = bcrypt.hashSync(body.password);
 
-    await userRepository.updatePassword(id, newPassword);
+    return await userRepository.updatePassword(id, newPassword);
 };
 
 exports.deleteUser = async (id) => {
@@ -175,15 +215,6 @@ exports.deleteUser = async (id) => {
 };
 
 // ROLES
-
-exports.createRole = async (body) => {
-
-    const roleToCreate = {
-        role: body.role
-    };
-
-    return await roleRepository.create(roleToCreate);
-};
 
 exports.findAllRoles = async () => {
     return await roleRepository.findAll();
@@ -193,13 +224,10 @@ exports.findRoleByRole = async (role) => {
     return await roleRepository.findByRole(role);
 };
 
-exports.deleteRole = async (id) => {
-    return await roleRepository.delete(id);
-};
 
 // REFRESH TOKENS
 
-exports.refreshAccessToken = async (token) => {
+exports.refreshAccessToken = async (token, jwtInfo) => {
     const refreshToken = await refreshTokenRepository.findByToken(token);
     if (!refreshToken) {
         return 'INVALID';
@@ -211,16 +239,15 @@ exports.refreshAccessToken = async (token) => {
     }
 
     const user = {
-        id: refreshToken.user.id,
-        roles: refreshToken.user.roles,
-        employee: refreshToken.user.employee.employeeId
+        id: jwtInfo.userId,
+        roles: jwtInfo.roles,
     };
 
-    const newAccessToken = generateJWT(user);
+    const newAccessToken = await generateJWT(user, jwtInfo.employeeId);
 
     return {
         accessToken: newAccessToken,
-        refreshToken: refreshToken
+        refreshToken: refreshToken.token
     };
 };
 
@@ -235,7 +262,7 @@ const createPasswordToken = async (user, transaction) => {
     const passwordToken = {
         token: token,
         expiryDate: date,
-        user: user,
+        userId: user.id,
     };
 
     return await passwordTokenRepository.create(passwordToken, transaction);
@@ -262,12 +289,12 @@ const verifyExpiryDate = (date) => {
 
 const generateUsername = (name) => {
     let randomNumber = Math.floor(Math.random() * 9999) + 1000
-    return name.substring(0, 4) + randomNumber;
+    return name.substring(0, 4).toLowerCase() + randomNumber;
 };
 
-const generateJWT = (user, next) => {
+const generateJWT = (user, employeeId, next) => {
     return new Promise((resolve) => {
-        jwt.sign({id: user.id, roles: user.roles, employeeId: user.employee.id}, {
+        jwt.sign({id: user.id, roles: user.roles, employeeId: employeeId}, {
             key: key,
             passphrase: process.env.PRIVATE_KEY_PW
         }, {algorithm: 'RS256'}, function (err, token) {

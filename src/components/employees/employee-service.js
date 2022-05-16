@@ -1,11 +1,14 @@
 const employeeRepository = require('./employee-repository');
-const authService = require('../auth/auth-service'); //TODO FIX THIS IMPORT
+const {service: authService} = require('../auth');
 const {AppError} = require('../../error');
 const db = require('../../db');
 
 
 exports.create = async (body) => {
+
     const transaction = await db.sequelize.transaction();
+
+    const roles = body.roles;
 
     //if title is null, default will be used
     const employeeToCreate = {
@@ -17,25 +20,18 @@ exports.create = async (body) => {
     };
 
     const employee = await employeeRepository.create(employeeToCreate, transaction);
-    //return true if user is created and send email, else return false
-    //const userIsCreated = userService.generateUserForEmployee(transaction, name);
+    const userIsCreated = await authService.createUserForEmployee(employee, roles, transaction);
 
-    if (!employee) {
+    if (!employee || !userIsCreated) {
         await transaction.rollback();
-        throw new AppError('Failed to create employee!', 500, true);
-    }
-
-    const userIsCreated = await authService.createUserForEmployee(employee, transaction);
-
-    if (!userIsCreated) {
-        await transaction.rollback();
-        throw new AppError('Failed to create employee!', 500, true);
+        return false;
     }
 
     await transaction.commit();
 
     return true;
-};
+}
+;
 
 exports.delete = async (id) => {
     return await employeeRepository.delete(id);
@@ -53,7 +49,22 @@ exports.findById = async (id) => {
     return await employeeRepository.findById(id);
 };
 
-exports.update = async (id, body) => {
+exports.findNameAndTitleById = async (id) => {
+    return await employeeRepository.findNameAndTitleById(id);
+};
+
+exports.update = async (id, currentEmployeeId, body) => {
+    const transaction = await db.sequelize.transaction();
+
+    if (currentEmployeeId !== parseInt(id)) {
+        const employeeTitle = await employeeRepository.findTitleById(id);
+        if (!employeeTitle) {
+            return false;
+        }
+        if (employeeTitle !== 'Supervisor' || 'Manager') {
+            throw new AppError(`Employee ${id} could not be updated, invalid permission!`, 401, true);
+        }
+    }
 
     const employeeToUpdate = {
         name: body.name,
@@ -63,6 +74,15 @@ exports.update = async (id, body) => {
         address: body.address,
     };
 
-    return await employeeRepository.update(id, employeeToUpdate);
+    const updated = await employeeRepository.update(id, employeeToUpdate, transaction);
+
+    if (!updated) {
+        await transaction.rollback();
+        return false;
+    }
+
+    await transaction.commit();
+
+    return updated;
 };
 

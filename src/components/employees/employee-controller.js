@@ -76,7 +76,7 @@ exports.update = async (req, res, next) => {
         }
     }
 
-    const updated = await employeeService.update(req.params.id, req.body);
+    const updated = await employeeService.update(req.params.id, req.employeeId, req.body);
 
     if (!updated) {
         logger.error(`${moduleName} failed to update employee`);

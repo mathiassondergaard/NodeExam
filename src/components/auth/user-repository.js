@@ -5,14 +5,13 @@ const {AppError} = require('../../error');
 const moduleName = 'user-repository.js -';
 
 exports.create = async (user, transaction) => {
+
     const _user = await User.create({
         username: user.username,
         email: user.email,
         password: user.password,
-        employee: user.employee,
-        roles: user.roles
+        employee_id: user.employee.id,
     }, {
-        include: ['employee', 'roles'],
         transaction
     });
 
@@ -20,20 +19,21 @@ exports.create = async (user, transaction) => {
         logger.error(`${moduleName} could not create user`);
         return false;
     }
-
+    await _user.setRoles(user.roles.map(role => role.id), {transaction});
     logger.debug(`${moduleName} created user ${JSON.stringify(_user)}`);
 
-    return true;
+    return _user.get({plain: true});
 };
 
 exports.findAll = async () => {
     const users = await User.findAll({
-        include: [{
+        attributes: {
+            exclude: ['password']
+        },
+        include: {
             association: 'roles',
             attributes: ['id', 'role']
         },
-        ],
-        nested: true,
     });
 
     if (!users || users.length === 0) {
@@ -43,21 +43,19 @@ exports.findAll = async () => {
 
     logger.debug(`${moduleName} found all users successfully`);
 
-    return users;
+    return users.map(user => user.get({plain: true}));
 };
 
 exports.update = async (id, user) => {
     const _user = await User.update({
-        username: user.username,
-        email: user.email,
-        roles: user.roles
-    }, {
-        include: 'role'
-    }, {
-        where: {
-            id: id
-        }
-    });
+            username: user.username,
+            email: user.email,
+        }, {
+            where: {
+                id: id
+            },
+        },
+    );
 
     if (!_user || _user[0] === 0) {
         logger.error(`${moduleName} user to update not found id: ${id} / db error`);
@@ -70,12 +68,14 @@ exports.update = async (id, user) => {
 
 exports.findById = async (id) => {
     const user = await User.findByPk(id, {
+        attributes: {
+            exclude: ['password']
+        },
         include: [{
             association: 'roles',
             attributes: ['id', 'role']
         },
         ],
-        nested: true,
     });
 
     if (!user) {
@@ -85,6 +85,19 @@ exports.findById = async (id) => {
 
     logger.debug(`${moduleName} retrieved user by id: ${id} | ${JSON.stringify(user)}`);
     return user.get({plain: true});
+};
+
+exports.updateRoles = async (id, roles) => {
+    const user = await User.findByPk(id);
+    const updated = await user.setRoles(roles.map(role => role.id));
+
+    if (!updated || updated[0] === 0) {
+        logger.error(`${moduleName} user ${id} not present in db / db error`);
+        throw new AppError(`User ${id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} updated user roles: ${id} | new roles ${JSON.stringify(roles)}`);
+    return {message: 'Successfully updated user roles!'};
 };
 
 exports.findByUsername = async (username) => {
@@ -120,7 +133,7 @@ exports.findPasswordById = async (id) => {
     }
 
     logger.debug(`${moduleName} retrieved user password by id: ${id}`);
-    return user.get({plain: true});
+    return user.get({plain: true}).password;
 };
 
 exports.updatePassword = async (id, password) => {

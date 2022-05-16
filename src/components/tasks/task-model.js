@@ -88,7 +88,4 @@ Employee.belongsToMany(Task, {
     foreignKey: 'employee_id'
 })
 
-module.exports = {
-    Task
-};
-
+module.exports = Task;
