@@ -1,6 +1,6 @@
 const db = require('../../db');
 
-const Product = db.sequelize.define('products', {
+const Item = db.sequelize.define('items', {
     name: {
         type: db.Sequelize.STRING,
         allowNull: false,
@@ -40,12 +40,13 @@ const Product = db.sequelize.define('products', {
         },
     },
     status: {
-        type: db.Sequelize.INTEGER,
+        type: db.Sequelize.ENUM('HEALTHY', 'CAUTION', 'CRITICAL'),
+        defaultValue: 'HEALTHY',
         allowNull: false,
         validate: {
             isInt: {
                 args: true,
-                msg: 'Stock must be a number!'
+                msg: 'Status must be a number!'
             },
             notEmpty: {
                 args: true,
@@ -57,17 +58,21 @@ const Product = db.sequelize.define('products', {
             },
         },
     },
-    lastUpdatedBy: {
+    threshold: {
         type: db.Sequelize.INTEGER,
         allowNull: false,
         validate: {
             isInt: {
                 args: true,
-                msg: 'LastUpdatedBy must be a number!'
+                msg: 'Threshold must be a number!'
             },
             notEmpty: {
                 args: true,
-                msg: 'LastUpdatedBy cannot be empty!'
+                msg: 'Threshold cannot be empty!'
+            },
+            min: {
+                args: [0],
+                msg: 'Threshold cannot be below zero!',
             },
         },
     },
@@ -81,8 +86,16 @@ const Product = db.sequelize.define('products', {
             },
         },
     },
+    lastUpdatedBy: {
+        type: db.Sequelize.INTEGER,
+        allowNull: true,
+        validate: {
+            isInt: {
+                args: true,
+                msg: 'LastUpdatedBy must be a number!'
+            },
+        },
+    },
 });
 
-module.exports = {
-    Product
-};
+module.exports = Item;
