@@ -1,13 +1,13 @@
-const db = require('../../db');
+const db = require("../../db");
 
-const Item = db.sequelize.define('items', {
+const Item = db.sequelize.define("items", {
     name: {
         type: db.Sequelize.STRING,
         allowNull: false,
         validate: {
             notEmpty: {
                 args: true,
-                msg: 'Name cannot be empty'
+                msg: "Name cannot be empty",
             },
         },
     },
@@ -17,7 +17,7 @@ const Item = db.sequelize.define('items', {
         validate: {
             notEmpty: {
                 args: true,
-                msg: 'SKU cannot be empty!'
+                msg: "SKU cannot be empty!",
             },
         },
     },
@@ -27,34 +27,26 @@ const Item = db.sequelize.define('items', {
         validate: {
             isInt: {
                 args: true,
-                msg: 'Stock must be a number!'
+                msg: "Stock must be a number!",
             },
             notEmpty: {
                 args: true,
-                msg: 'Stock cannot be empty!'
+                msg: "Stock cannot be empty!",
             },
             min: {
-                args: [0],
-                msg: 'Stock cannot be below zero!',
+                args: 0,
+                msg: "Stock cannot be below zero!",
             },
         },
     },
     status: {
-        type: db.Sequelize.ENUM('HEALTHY', 'CAUTION', 'CRITICAL'),
-        defaultValue: 'HEALTHY',
+        type: db.Sequelize.ENUM("HEALTHY", "CAUTION", "CRITICAL"),
+        defaultValue: "HEALTHY",
         allowNull: false,
         validate: {
-            isInt: {
-                args: true,
-                msg: 'Status must be a number!'
-            },
             notEmpty: {
                 args: true,
-                msg: 'Stock cannot be empty!'
-            },
-            min: {
-                args: [0],
-                msg: 'Stock cannot be below zero!',
+                msg: "Status cannot be empty!",
             },
         },
     },
@@ -64,15 +56,15 @@ const Item = db.sequelize.define('items', {
         validate: {
             isInt: {
                 args: true,
-                msg: 'Threshold must be a number!'
+                msg: "Threshold must be a number!",
             },
             notEmpty: {
                 args: true,
-                msg: 'Threshold cannot be empty!'
+                msg: "Threshold cannot be empty!",
             },
             min: {
-                args: [0],
-                msg: 'Threshold cannot be below zero!',
+                args: 0,
+                msg: "Threshold cannot be below zero!",
             },
         },
     },
@@ -82,7 +74,7 @@ const Item = db.sequelize.define('items', {
         validate: {
             notEmpty: {
                 args: true,
-                msg: 'Location cannot be empty'
+                msg: "Location cannot be empty",
             },
         },
     },
@@ -92,7 +84,7 @@ const Item = db.sequelize.define('items', {
         validate: {
             isInt: {
                 args: true,
-                msg: 'LastUpdatedBy must be a number!'
+                msg: "LastUpdatedBy must be a number!",
             },
         },
     },
