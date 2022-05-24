@@ -1,0 +1,27 @@
+# npm
+node_modules
+package-lock.json
+*.gz
+
+# IDE / extensions
+.vscode
+.VSCodeCounter
+idea
+
+# logs
+logs
+*.log
+
+# dotenv
+.env
+
+# other
+*.txt
+.jshintrc
+
+# keys
+private-key.pem
+public-key.pem
+
+# nova
+.nova
