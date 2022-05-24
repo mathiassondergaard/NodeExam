@@ -37,7 +37,20 @@ exports.findAll = async () => {
 
     logger.debug(`${moduleName} found all employees successfully`);
 
-    return employees;
+    return employees.map(employee => { employee.get({plain: true})});
+};
+
+exports.findAllEmployeesNames = async () => {
+    const employees = await Employee.findAll({ attributes: ['name']});
+
+    if (!employees || employees.length === 0) {
+        logger.error(`${moduleName} no employees present in db / db error`);
+        throw new AppError('No employees present in DB!', 404, true);
+    }
+
+    logger.debug(`${moduleName} found all employees names successfully`);
+
+    return employees.map(employee => { employee.get({plain: true})});
 };
 
 exports.findMultipleByIds = async (ids) => {

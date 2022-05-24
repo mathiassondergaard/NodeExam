@@ -45,6 +45,10 @@ exports.findMultipleByIds = async (ids) => {
     return await employeeRepository.findMultipleByIds(ids);
 };
 
+exports.findAllEmployeesNames = async () => {
+    return await employeeRepository.findAllEmployeesNames();
+};
+
 exports.findById = async (id) => {
     return await employeeRepository.findById(id);
 };

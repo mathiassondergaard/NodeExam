@@ -20,7 +20,7 @@ exports.create = async (item) => {
 
     logger.debug(`${moduleName} created item ${JSON.stringify(_item)}`);
 
-    return true;
+    return {message: 'Item successfully created!'};
 };
 
 //Must have name, SKU, stock, threshold, location with same key/value pair
@@ -35,6 +35,30 @@ exports.bulkCreate = async (items) => {
     logger.debug(`${moduleName} created items ${JSON.stringify(_item)}`);
 
     return _items;
+};
+
+exports.findById = async (id) => {
+    const item = await Item.findByPk(id);
+
+    if (!item) {
+        logger.error(`${moduleName} Item ${id} not present in db / db error`);
+        throw new AppError(`Item ${id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} retrieved item by id: ${id} | ${JSON.stringify(item)}`);
+    return item.get({plain: true});
+};
+
+exports.findSKUAndStockById = async (id) => {
+    const item = await Item.findByPk(id, {attributes: ['SKU', 'stock']});
+
+    if (!item) {
+        logger.error(`${moduleName} item ${id} not present in db / db error`);
+        return false;
+    }
+
+    logger.debug(`${moduleName} retrieved item sku and stock by id: ${id} | ${JSON.stringify(item)}`);
+    return item.get({plain: true});
 };
 
 exports.findAll = async () => {
@@ -91,11 +115,11 @@ exports.findAllWithIncludedAttributes = async (attributes) => {
     return items.map(item => item.get({plain: true}));
 };
 
-exports.findBySKUsWithIncludedAttributes = async (SKUs, attributes) => {
+exports.findBySKUsWithIncludedAttributes = async (options) => {
     const items = await Item.findAll({
-        attributes: attributes,
+        attributes: options.attributes,
         where: {
-            SKU: SKUs,
+            SKU: options.SKUs,
         }
     });
 
@@ -104,102 +128,59 @@ exports.findBySKUsWithIncludedAttributes = async (SKUs, attributes) => {
         return false;
     }
 
-    logger.debug(`${moduleName} found all items successfully with attributes ${attributes}`);
+    logger.debug(`${moduleName} found all items by SKUs ${JSON.stringify(options.SKUs)} successfully with attributes ${options.attributes}`);
 
     return items.map(item => item.get({plain: true}));
 };
 
-exports.findByIdsWithIncludedAttributes = async (ids, attributes) => {
-    const items = await Item.findAll({
-        attributes: attributes,
-        where: {
-            id: ids,
-        }
-    });
-
-    if (!items || items.length === 0) {
-        logger.error(`${moduleName} no items present in db / db error`);
-        return false;
-    }
-
-    logger.debug(`${moduleName} found all items successfully with attributes ${attributes}`);
-
-    return items.map(item => item.get({plain: true}));
-};
-
-exports.update = async (id, item) => {
+exports.update = async (itemToUpdate) => {
     const _item = await Item.update({
-        name: item.name,
-        SKU: item.SKU,
-        stock: item.stock,
-        threshold: item.threshold,
-        location: item.location,
-        lastUpdatedBy: item.lastUpdatedBy,
+        name: itemToUpdate.name,
+        SKU: itemToUpdate.SKU,
+        threshold: itemToUpdate.threshold,
+        location: itemToUpdate.location,
+        lastUpdatedBy: itemToUpdate.updatedBy,
     }, {
         where: {
-            id: id
+            id: itemToUpdate.id
         },
     });
 
     if (!_item || _item[0] === 0) {
-        logger.error(`${moduleName} item to update not found id: ${id} / db error`);
-        throw new AppError(`Item ${id} not found!`, 404, true);
+        logger.error(`${moduleName} item to update not found id: ${itemToUpdate.id} / db error`);
+        throw new AppError(`Item ${itemToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated item, id ${id}: ${JSON.stringify(_item)}`);
-    return {message: `Item ${id} successfully updated!`};
+    logger.debug(`${moduleName} updated item, id ${itemToUpdate.id}: ${JSON.stringify(_item)}`);
+    return {message: `Item ${itemToUpdate.id} successfully updated!`};
 };
 
-exports.updateStock = async (id, newStock, updatedBy) => {
+exports.updateStock = async (itemToUpdate, transaction) => {
     const _item = await Item.update({
-        stock: newStock,
-        lastUpdatedBy: updatedBy,
+        stock: itemToUpdate.stock,
+        lastUpdatedBy: itemToUpdate.updatedBy,
     }, {
         where: {
-            id: id
+            id: itemToUpdate.id
         },
+        transaction
     });
 
     if (!_item || _item[0] === 0) {
-        logger.error(`${moduleName} item to update not found id: ${id} / db error`);
+        logger.error(`${moduleName} item to update not found id: ${itemToUpdate.id} / db error`);
         return false;
     }
 
-    logger.debug(`${moduleName} updated item, id ${id}: ${JSON.stringify(_item)}`);
-    return {message: `Item ${id} successfully updated!`};
+    logger.debug(`${moduleName} updated item, id ${itemToUpdate.id}: new stock: ${JSON.stringify(itemToUpdate.stock)}`);
+    return {message: `Item ${itemToUpdate.id} successfully updated!`};
 };
 
-exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, updatedBy, transaction) => {
-    const items = await Item.findAll({
-        attributes: ['SKU', 'stock'],
-        where: {
-            SKU: SKUs
-        }
-    });
+exports.updateStockOnMultiple = async (itemsToUpdate, transaction) => {
 
-    if (!items || items.length === 0) {
-        logger.error(`${moduleName} failed to fetch items on update item stock`);
-        return false;
-    }
-
-    const updates = [];
-
-    items.forEach(item => {
-        itemsToUpdate.forEach(async (itemToUpdate) => {
-            if (item.SKU !== itemToUpdate.SKU) return;
-            item.stock -= itemToUpdate.quantityChanged;
-
-            updates.push(Item.update({
-                stock: item.stock,
-                lastUpdatedBy: updatedBy,
-            }, {
-                where: {
-                    SKU: item.SKU
-                },
-                transaction
-            }));
-        });
-    });
+    const updates = itemsToUpdate.items.map(i => Item.update(
+        { stock: i.stock, lastUpdatedBy: itemsToUpdate.updatedBy },
+        { where: { SKU: i.SKU}, transaction }
+    ));
 
     const updated = await Promise.all(updates).catch(async () => { return null;});
 
@@ -208,28 +189,28 @@ exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, updatedBy, transacti
         return false;
     }
 
-    logger.debug(`${moduleName} updated item stock by SKUs: ${JSON.stringify(SKUs)}`);
+    logger.debug(`${moduleName} updated item stock by SKUs: ${JSON.stringify(itemsToUpdate.SKUs)}`);
 
     return true;
 };
 
-exports.updateLocation = async (id, newLocation, updatedBy) => {
+exports.updateLocation = async (itemToUpdate) => {
     const _item = await Item.update({
-        location: newLocation,
-        lastUpdatedBy: updatedBy,
+        location: itemToUpdate.location,
+        lastUpdatedBy: itemToUpdate.updatedBy,
     }, {
         where: {
-            id: id
+            id: itemToUpdate.id
         },
     });
 
     if (!_item || _item[0] === 0) {
-        logger.error(`${moduleName} item to update not found id: ${id} / db error`);
-        throw new AppError(`Item ${id} not found!`, 404, true);
+        logger.error(`${moduleName} item to update not found id: ${itemToUpdate.id} / db error`);
+        throw new AppError(`Item ${itemToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated item location, id ${id}: ${JSON.stringify(_item)}`);
-    return {message: `Item ${id} location successfully updated!`};
+    logger.debug(`${moduleName} updated item location, id ${itemToUpdate.id}: new location: ${JSON.stringify(itemToUpdate.location)}`);
+    return {message: `Item ${itemToUpdate.id} location successfully updated!`};
 };
 
 exports.findById = async (id) => {
@@ -244,23 +225,23 @@ exports.findById = async (id) => {
     return item.get({plain: true});
 };
 
-exports.updateStatus = async (id, status, updatedBy) => {
+exports.updateStatus = async (itemToUpdate) => {
     const item = await Item.update({
-        status: status,
-        lastUpdatedBy: updatedBy,
+        status: itemToUpdate.status,
+        lastUpdatedBy: itemToUpdate.updatedBy,
     }, {
         where: {
-            id: id
+            id: itemToUpdate.id
         }
     });
 
     if (!item || item[0] === 0) {
-        logger.error(`${moduleName} item to update status not found id: ${id}`);
-        throw new AppError(`Item ${id} not found!`, 404, true);
+        logger.error(`${moduleName} item to update status not found id: ${itemToUpdate.id}`);
+        throw new AppError(`Item ${itemToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated item status with id ${id}: ${JSON.stringify(status)}`);
-    return {message: `Item ${id} status successfully updated! New status: ${status}`};
+    logger.debug(`${moduleName} updated item status with id ${itemToUpdate.id}: ${JSON.stringify(itemToUpdate.status)}`);
+    return {message: `Item ${itemToUpdate.id} status successfully updated! New status: ${itemToUpdate.status}`};
 };
 
 exports.delete = async (id) => {

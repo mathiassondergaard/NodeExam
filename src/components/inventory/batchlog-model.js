@@ -1,8 +1,8 @@
 const db = require("../../db");
 
-const ItemLog = db.sequelize.define("items_log", {
-    SKU: {
-        type: db.Sequelize.STRING,
+const BatchLog = db.sequelize.define("batch_logs", {
+    affectedItemsSKUs: {
+        type: db.Sequelize.ARRAY(db.Sequelize.STRING),
         allowNull: false,
         validate: {
             notEmpty: {
@@ -25,16 +25,6 @@ const ItemLog = db.sequelize.define("items_log", {
             },
         },
     },
-    quantityChanged: {
-        type: db.Sequelize.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty: {
-                args: true,
-                msg: "Quantity changed cannot be empty!",
-            },
-        },
-    },
     note: {
         type: db.Sequelize.STRING,
         allowNull: false,
@@ -51,4 +41,4 @@ const ItemLog = db.sequelize.define("items_log", {
     },
 });
 
-module.exports = ItemLog;
+module.exports = BatchLog;

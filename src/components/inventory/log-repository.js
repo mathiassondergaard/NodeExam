@@ -7,7 +7,7 @@ const moduleName = 'itemLog-repository.js -';
 exports.create = async (itemLog, transaction) => {
     const _itemLog = await ItemLog.create({
         SKU: itemLog.SKU,
-        userId: itemLog.userId,
+        employeeId: itemLog.employeeId,
         quantityChanged: itemLog.quantityChanged,
         note: itemLog.note,
     }, {
