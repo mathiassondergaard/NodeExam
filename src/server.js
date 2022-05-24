@@ -6,6 +6,7 @@ const db = require('./db');
 const {router: employeeRouter} = require('./components/employees');
 const {router: taskRouter} = require('./components/tasks');
 const {router: authRouter} = require('./components/auth');
+const path = require("path");
 
 const app = express();
 
@@ -17,6 +18,9 @@ db.sequelize.sync({ force: true }).then(() => {
     console.log("Please drop and re-sync DB");
 });
 */
+
+// Root project directory path
+global.__basedir = path.resolve(__dirname, '..');
 
 let corsOptions = {
     origin: ''

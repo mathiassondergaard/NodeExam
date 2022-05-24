@@ -134,6 +134,7 @@ exports.update = async (id, item) => {
         stock: item.stock,
         threshold: item.threshold,
         location: item.location,
+        lastUpdatedBy: item.lastUpdatedBy,
     }, {
         where: {
             id: id
@@ -149,9 +150,10 @@ exports.update = async (id, item) => {
     return {message: `Item ${id} successfully updated!`};
 };
 
-exports.updateStock = async (id, newStock) => {
+exports.updateStock = async (id, newStock, updatedBy) => {
     const _item = await Item.update({
         stock: newStock,
+        lastUpdatedBy: updatedBy,
     }, {
         where: {
             id: id
@@ -167,7 +169,7 @@ exports.updateStock = async (id, newStock) => {
     return {message: `Item ${id} successfully updated!`};
 };
 
-exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, transaction) => {
+exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, updatedBy, transaction) => {
     const items = await Item.findAll({
         attributes: ['SKU', 'stock'],
         where: {
@@ -189,6 +191,7 @@ exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, transaction) => {
 
             updates.push(Item.update({
                 stock: item.stock,
+                lastUpdatedBy: updatedBy,
             }, {
                 where: {
                     SKU: item.SKU
@@ -210,9 +213,10 @@ exports.updateStockOnMultiple = async (SKUs, itemsToUpdate, transaction) => {
     return true;
 };
 
-exports.updateLocation = async (id, newLocation) => {
+exports.updateLocation = async (id, newLocation, updatedBy) => {
     const _item = await Item.update({
         location: newLocation,
+        lastUpdatedBy: updatedBy,
     }, {
         where: {
             id: id
@@ -240,9 +244,10 @@ exports.findById = async (id) => {
     return item.get({plain: true});
 };
 
-exports.updateStatus = async (id, status) => {
+exports.updateStatus = async (id, status, updatedBy) => {
     const item = await Item.update({
         status: status,
+        lastUpdatedBy: updatedBy,
     }, {
         where: {
             id: id
