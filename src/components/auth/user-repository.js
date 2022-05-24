@@ -46,24 +46,24 @@ exports.findAll = async () => {
     return users.map(user => user.get({plain: true}));
 };
 
-exports.update = async (id, user) => {
+exports.update = async (user) => {
     const _user = await User.update({
             username: user.username,
             email: user.email,
         }, {
             where: {
-                id: id
+                id: user.id
             },
         },
     );
 
     if (!_user || _user[0] === 0) {
-        logger.error(`${moduleName} user to update not found id: ${id} / db error`);
-        throw new AppError(`User ${id} not found!`, 404, true);
+        logger.error(`${moduleName} user to update not found id: ${user.id} / db error`);
+        throw new AppError(`User ${user.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated user, id ${id}: ${JSON.stringify(_user)}`);
-    return {message: `User ${id} successfully updated!`};
+    logger.debug(`${moduleName} updated user, id ${user.id}: ${JSON.stringify(_user)}`);
+    return {message: `User ${user.id} successfully updated!`};
 };
 
 exports.findById = async (id) => {
@@ -136,40 +136,40 @@ exports.findPasswordById = async (id) => {
     return user.get({plain: true}).password;
 };
 
-exports.updatePassword = async (id, password) => {
+exports.updatePassword = async (userToUpdate) => {
     const user = await User.update({
-        password: password,
+        password: userToUpdate.password,
     }, {
         where: {
-            id: id
+            id: userToUpdate.id
         }
     });
 
     if (!user || user[0] === 0) {
-        logger.error(`${moduleName} user to update password not found id: ${id}`);
-        throw new AppError(`User ${id} not found!`, 404, true);
+        logger.error(`${moduleName} user to update password not found id: ${userToUpdate.id}`);
+        throw new AppError(`User ${userToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated user password with id ${id}`);
-    return {message: `User ${id} password successfully updated!`};
+    logger.debug(`${moduleName} updated user password with id ${userToUpdate.id}`);
+    return {message: `User ${userToUpdate.id} password successfully updated!`};
 };
 
-exports.updatePasswordByUsername = async (username, password, transaction) => {
+exports.updatePasswordByUsername = async (userToUpdate, transaction) => {
     const user = await User.update({
-        password: password,
+        password: userToUpdate.password,
     }, {
         where: {
-            username: username
+            username: userToUpdate.username
         },
         transaction
     });
 
     if (!user || user[0] === 0) {
-        logger.error(`${moduleName} user to update password not found username: ${username}`);
+        logger.error(`${moduleName} user to update password not found username: ${userToUpdate.username}`);
         return false;
     }
 
-    logger.debug(`${moduleName} updated user password with username ${username}`);
+    logger.debug(`${moduleName} updated user password with username ${userToUpdate.username}`);
     return true;
 };
 

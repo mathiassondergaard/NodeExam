@@ -70,7 +70,7 @@ exports.findMultipleByIds = async (ids) => {
     return employees.map(employee => employee.get({plain: true}));
 };
 
-exports.update = async (id, employee, transaction) => {
+exports.update = async (employee, transaction) => {
     const _employee = await Employee.update({
             name: employee.name,
             email: employee.email,
@@ -78,7 +78,7 @@ exports.update = async (id, employee, transaction) => {
             title: employee.title,
         }, {
         where: {
-                id: id
+                id: employee.id
             },
         },
         transaction
@@ -90,17 +90,17 @@ exports.update = async (id, employee, transaction) => {
         zip: employee.address.zip,
         country: employee.address.country
     }, {
-        where: {employee_id: id},
+        where: {employee_id: employee.id},
         transaction
     });
 
     if ((!_employee || _employee[0] === 0) || (!address || address[0] === 0)) {
-        logger.error(`${moduleName} employee and or address to update not found id: ${id} / db error`);
+        logger.error(`${moduleName} employee and or address to update not found id: ${employee.id} / db error`);
         return false;
     }
 
-    logger.debug(`${moduleName} updated employee, id ${id}: ${JSON.stringify(_employee)}`);
-    return {message: `Employee ${id} successfully updated!`};
+    logger.debug(`${moduleName} updated employee, id ${employee.id}: ${JSON.stringify(_employee)}`);
+    return {message: `Employee ${employee.id} successfully updated!`};
 };
 
 exports.findById = async (id) => {

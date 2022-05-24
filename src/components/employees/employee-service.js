@@ -30,8 +30,7 @@ exports.create = async (body) => {
     await transaction.commit();
 
     return true;
-}
-;
+};
 
 exports.delete = async (id) => {
     return await employeeRepository.delete(id);
@@ -57,28 +56,29 @@ exports.findNameAndTitleById = async (id) => {
     return await employeeRepository.findNameAndTitleById(id);
 };
 
-exports.update = async (id, currentEmployeeId, body) => {
+exports.update = async (employee, currentEmployeeId) => {
     const transaction = await db.sequelize.transaction();
 
-    if (currentEmployeeId !== parseInt(id)) {
-        const employeeTitle = await employeeRepository.findTitleById(id);
+    if (currentEmployeeId !== parseInt(employee.id)) {
+        const employeeTitle = await employeeRepository.findTitleById(employee.id);
         if (!employeeTitle) {
             return false;
         }
         if (employeeTitle !== 'Supervisor' || 'Manager') {
-            throw new AppError(`Employee ${id} could not be updated, invalid permission!`, 401, true);
+            throw new AppError(`Employee ${employee.id} could not be updated, invalid permission!`, 401, true);
         }
     }
 
     const employeeToUpdate = {
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        title: body.title,
-        address: body.address,
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        title: employee.title,
+        address: employee.address,
     };
 
-    const updated = await employeeRepository.update(id, employeeToUpdate, transaction);
+    const updated = await employeeRepository.update(employeeToUpdate, transaction);
 
     if (!updated) {
         await transaction.rollback();

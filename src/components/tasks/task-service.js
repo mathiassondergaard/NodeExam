@@ -22,10 +22,10 @@ exports.create = async (body, employeeId) => {
     return await taskRepository.create(taskToCreate);
 };
 
-exports.updateAssignedEmployees = async (id, employeeId, body) => {
-    await validatePermissionsBasedOnAssignee(id, employeeId, 'update');
+exports.updateAssignedEmployees = async (taskToUpdate, employeeId) => {
+    await validatePermissionsBasedOnAssignee(taskToUpdate.id, employeeId, 'update');
 
-    const updated = await taskRepository.updateAssignedEmployees(id, body.assignedEmployees);
+    const updated = await taskRepository.updateAssignedEmployees(taskToUpdate);
 
     if (!updated) {
         return false;
@@ -64,59 +64,60 @@ exports.findById = async (id) => {
     return task;
 };
 
-exports.update = async (id, body, employeeId) => {
-    await validatePermissionsBasedOnAssignee(id, employeeId, 'update');
+exports.update = async (body, employeeId) => {
+    await validatePermissionsBasedOnAssignee(body.id, employeeId, 'update');
 
     const taskToUpdate = {
+        id: body.id,
         name: body.name,
         description: body.description,
         level: body.level,
         status: body.status,
     };
 
-    return await taskRepository.update(id, taskToUpdate);
+    return await taskRepository.update(taskToUpdate);
 };
 
-exports.updateStatus = async (id, status, employeeId) => {
-    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+exports.updateStatus = async (taskToUpdate, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
     const statusValidation = ['NOT-STARTED', 'ON-GOING', 'POSTPONED', 'COMPLETED'];
 
-    if (!statusValidation.includes(status.toUpperCase())) {
-        throw new AppError(`Failed to update status - invalid status! ${status}`, 500, true);
+    if (!statusValidation.includes(taskToUpdate.status.toUpperCase())) {
+        throw new AppError(`Failed to update status - invalid status! ${taskToUpdate.status}`, 500, true);
     }
 
-    return await taskRepository.updateStatus(id, status.toUpperCase());
+    return await taskRepository.updateStatus(taskToUpdate);
 };
 
-exports.updateLevel = async (id, level, employeeId) => {
-    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+exports.updateLevel = async (taskToUpdate, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
     const statusValidation = ['LOW', 'MEDIUM', 'HIGH'];
 
-    if (!statusValidation.includes(level.toUpperCase())) {
-        throw new AppError(`Failed to update level - invalid level! ${level}`, 500, true);
+    if (!statusValidation.includes(taskToUpdate.level.toUpperCase())) {
+        throw new AppError(`Failed to update level - invalid level! ${taskToUpdate.level}`, 500, true);
     }
 
-    return await taskRepository.updateLevel(id, level.toUpperCase());
+    return await taskRepository.updateLevel(taskToUpdate);
 };
 
-exports.updateStartedAt = async (id, date, employeeId) => {
-    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+exports.updateStartedAt = async (taskToUpdate, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
-    if (!date) {
-        date = new Date();
+    if (!taskToUpdate.date) {
+        taskToUpdate.date = new Date();
     }
-    return await taskRepository.updateStartedAt(id, date);
+    return await taskRepository.updateStartedAt(taskToUpdate);
 };
 
-exports.updateCompletedAt = async (id, date, employeeId) => {
-    await validatePermissionsBasedOnAssignedEmployee(id, employeeId, 'update');
+exports.updateCompletedAt = async (taskToUpdate, employeeId) => {
+    await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
-    if (!date) {
-        date = new Date();
+    if (!taskToUpdate.date) {
+        taskToUpdate.date = new Date();
     }
-    return await taskRepository.updateCompletedAt(id, date);
+    return await taskRepository.updateCompletedAt(taskToUpdate);
 };
 
 exports.findAllByEmployeeId = async (employeeId) => {

@@ -66,37 +66,37 @@ exports.findAllByAssignee = async (assignee) => {
     return tasks.map(task => task.get({plain: true}));
 };
 
-exports.update = async (id, task) => {
+exports.update = async (taskToUpdate) => {
     const _task = await Task.update({
-        name: task.name,
-        description: task.description,
-        level: task.level,
-        status: task.status,
+        name: taskToUpdate.name,
+        description: taskToUpdate.description,
+        level: taskToUpdate.level,
+        status: taskToUpdate.status,
     }, {
         where: {
-            id: id
+            id: taskToUpdate.id
         },
     });
 
     if (!_task || _task[0] === 0) {
-        logger.error(`${moduleName} task to update not found id: ${id} / db error`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} task to update not found id: ${taskToUpdate.id} / db error`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task, id ${id}: ${JSON.stringify(_task)}`);
-    return {message: `Task ${id} successfully updated!`};
+    logger.debug(`${moduleName} updated task, id ${taskToUpdate.id}: ${JSON.stringify(_task)}`);
+    return {message: `Task ${taskToUpdate.id} successfully updated!`};
 };
 
-exports.updateAssignedEmployees = async (id, assignedEmployees) => {
-    const task = await Task.findByPk(id,{});
-    const updated = await task.setAssignedEmployees(assignedEmployees);
+exports.updateAssignedEmployees = async (taskToUpdate) => {
+    const task = await Task.findByPk(taskToUpdate.id,{});
+    const updated = await task.setAssignedEmployees(taskToUpdate.assignedEmployees);
 
     if (!task || !updated || updated[0] === 0) {
-        logger.error(`${moduleName} Task ${id} not present in db / db error`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} Task ${taskToUpdate.id} not present in db / db error`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task assigned employees: ${id} | new employees ${JSON.stringify(assignedEmployees)}`);
+    logger.debug(`${moduleName} updated task assigned employees: ${taskToUpdate.id} | new employees ${JSON.stringify(taskToUpdate.assignedEmployees)}`);
     return {message: 'Successfully updated task assigned employees!'};
 }
 
@@ -174,76 +174,76 @@ exports.checkIfEmployeeIsAssignedToTask = async (id, employeeId) => {
     return true;
 };
 
-exports.updateStatus = async (id, status) => {
+exports.updateStatus = async (taskToUpdate) => {
     const task = await Task.update({
-        status: status,
+        status: taskToUpdatestatus,
     }, {
         where: {
-            id: id
+            id: taskToUpdate.id
         }
     });
 
     if (!task || task[0] === 0) {
-        logger.error(`${moduleName} task to update status not found id: ${id}`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} task to update status not found id: ${taskToUpdate.id}`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task status with id ${id}: ${JSON.stringify(status)}`);
-    return {message: `Task ${id} status successfully updated! New status: ${status}`};
+    logger.debug(`${moduleName} updated task status with id ${taskToUpdate.id}: ${JSON.stringify(taskToUpdate.status)}`);
+    return {message: `Task ${taskToUpdate.id} status successfully updated! New status: ${taskToUpdate.status}`};
 };
 
-exports.updateLevel = async (id, level) => {
+exports.updateLevel = async (taskToUpdate) => {
     const task = await Task.update({
-        level: level,
+        level: taskToUpdate.level,
     }, {
         where: {
-            id: id
+            id: taskToUpdate.id
         }
     });
 
     if (!task || task[0] === 0) {
-        logger.error(`${moduleName} task to update level not found id: ${id}`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} task to update level not found id: ${taskToUpdate.id}`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task level with id ${id}: ${JSON.stringify(level)}`);
-    return {message: `Task ${id} level successfully updated! New level: ${level}`};
+    logger.debug(`${moduleName} updated task level with id ${taskToUpdate.id}: ${JSON.stringify(taskToUpdate.level)}`);
+    return {message: `Task ${taskToUpdate.id} level successfully updated! New level: ${taskToUpdate.level}`};
 };
 
-exports.updateCompletedAt = async (id, date) => {
+exports.updateCompletedAt = async (taskToUpdate) => {
     const task = await Task.update({
-        completedAt: date,
+        completedAt: taskToUpdate.date,
     }, {
         where: {
-            id: id
+            id: taskToUpdate.id
         }
     });
 
     if (!task || task[0] === 0) {
-        logger.error(`${moduleName} task to update completed at not found id: ${id}`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} task to update completed at not found id: ${taskToUpdate.id}`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task completed at with id ${id}: ${JSON.stringify(date)}`);
-    return {message: `Task ${id} completed at successfully updated! New date: ${date}`};
+    logger.debug(`${moduleName} updated task completed at with id ${taskToUpdate.id}: ${JSON.stringify(taskToUpdate.date)}`);
+    return {message: `Task ${taskToUpdate.id} completed at successfully updated! New date: ${taskToUpdate.date}`};
 };
 
-exports.updateStartedAt = async (id, date) => {
+exports.updateStartedAt = async (taskToUpdate) => {
     const task = await Task.update({
-        startedAt: date,
+        startedAt: taskToUpdate.date,
     }, {
         where: {
-            id: id
+            id: taskToUpdate.id
         }
     });
 
     if (!task || task[0] === 0) {
-        logger.error(`${moduleName} task to update started at not found id: ${id}`);
-        throw new AppError(`Task ${id} not found!`, 404, true);
+        logger.error(`${moduleName} task to update started at not found id: ${taskToUpdate.id}`);
+        throw new AppError(`Task ${taskToUpdate.id} not found!`, 404, true);
     }
 
-    logger.debug(`${moduleName} updated task started at with id ${id}: ${JSON.stringify(date)}`);
-    return {message: `Task ${id} started at successfully updated! New date: ${date}`};
+    logger.debug(`${moduleName} updated task started at with id ${taskToUpdate.id}: ${JSON.stringify(taskToUpdate.date)}`);
+    return {message: `Task ${taskToUpdate.id} started at successfully updated! New date: ${taskToUpdate.date}`};
 };
 
 exports.delete = async (id) => {

@@ -157,14 +157,15 @@ exports.updateUserRoles = async (id, roles) => {
     return await userRepository.updateRoles(id, rolesToUpdate);
 };
 
-exports.updateUser = async (id, body) => {
+exports.updateUser = async (user) => {
 
     const userToUpdate = {
-        username: body.username,
-        email: body.email,
+        id: user.id,
+        username: user.username,
+        email: user.email,
     };
 
-    return await userRepository.update(id, userToUpdate);
+    return await userRepository.update(userToUpdate);
 };
 
 exports.changePasswordOnNewUser = async (body) => {
@@ -195,19 +196,19 @@ exports.changePasswordOnNewUser = async (body) => {
     return {message: 'Successfully changed password!'};
 };
 
-exports.changePassword = async (id, currentUserId, body) => {
-    if (currentUserId !== parseInt(id)) {
+exports.changePassword = async (userToUpdate, loggedInUserId) => {
+    if (loggedInUserId !== parseInt(userToUpdate.id)) {
         throw new AppError('Password could not be updated - invalid permission!', 401, true);
     }
 
-    const userPassword = await userRepository.findPasswordById(id);
-    if (!bcrypt.compareSync(body.oldPassword, userPassword)) {
+    const userPassword = await userRepository.findPasswordById(userToUpdate.id);
+    if (!bcrypt.compareSync(userToUpdate.oldPassword, userPassword)) {
         throw new AppError('Old password does not match!', 401, true);
     }
 
-    const newPassword = bcrypt.hashSync(body.password);
+    userToUpdate.password = bcrypt.hashSync(userToUpdate.password);
 
-    return await userRepository.updatePassword(id, newPassword);
+    return await userRepository.updatePassword(userToUpdate);
 };
 
 exports.deleteUser = async (id) => {
@@ -251,7 +252,6 @@ exports.refreshAccessToken = async (token, jwtInfo) => {
     };
 };
 
-
 // PASSWORD TOKENS
 
 const createPasswordToken = async (user, transaction) => {
@@ -292,14 +292,14 @@ const generateUsername = (name) => {
     return name.substring(0, 4).toLowerCase() + randomNumber;
 };
 
-const generateJWT = (user, employeeId, next) => {
+const generateJWT = (user, employeeId) => {
     return new Promise((resolve) => {
         jwt.sign({id: user.id, roles: user.roles, employeeId: employeeId}, {
             key: key,
             passphrase: process.env.PRIVATE_KEY_PW
         }, {algorithm: 'RS256'}, function (err, token) {
             if (err) {
-                next(new AppError(err.message, 500, true));
+                throw new AppError(err.message, 500, true);
             }
             resolve(token);
         });

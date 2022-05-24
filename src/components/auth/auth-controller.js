@@ -71,7 +71,9 @@ exports.updateUser = async (req, res, next) => {
         }
     }
 
-    const updated = await authService.updateUser(req.params.id, req.body);
+    req.body.id = req.params.id;
+
+    const updated = await authService.updateUser(req.body);
 
     if (!updated) {
         logger.error(`${moduleName} user could not be updated`);
@@ -102,8 +104,8 @@ exports.changePasswordForNewUser = async (req, res, next) => {
 };
 
 exports.changePassword = async (req, res, next) => {
-
-    const updated = await authService.changePassword(req.params.id, req.userId, req.body);
+    req.body.id = req.params.id;
+    const updated = await authService.changePassword(req.body, req.userId);
 
     if (!updated) {
         logger.error(`${moduleName} update pw failed ${req.params.id}`);
