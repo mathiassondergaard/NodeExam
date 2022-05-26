@@ -34,7 +34,7 @@ exports.bulkCreate = async (items) => {
 
     logger.debug(`${moduleName} created items ${JSON.stringify(_item)}`);
 
-    return _items;
+    return _items.map(item => item.get({plain: true}));
 };
 
 exports.findById = async (id) => {

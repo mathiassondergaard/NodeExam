@@ -99,6 +99,50 @@ exports.delete = async (id) => {
     return await itemRepository.delete(id);
 };
 
+exports.importInventoryList = async (body) => {
+    let filePath = path.join(__basedir, '/uploads/', body.csvFileName);
+    const parser = csv.parse({headers: true});
+    const stream = fs.createReadStream(filePath);
+
+    const items = [];
+
+    stream.pipe(parser)
+        .on('error', () => {
+            throw new AppError('Error during CSV handling', 500, true);
+        })
+        .on('data', (row) => {
+            items.push(row);
+        })
+        .on('end', () => {
+            stream.destroy();
+        })
+        .on('close', () => {
+            console.log('Destroyed stream and closed file!'); //replace with logger
+            fs.unlinkSync(filePath);
+            parser.end();
+            stream.unpipe(parser);
+            stream.close();
+        });
+
+    const headersValidation = ['name', 'SKU', 'stock', 'threshold', 'location']
+    const headers = items.map(item => Object.keys(item));
+    headers.forEach(i => {
+        i.forEach(x => {
+            if (!headersValidation.includes(x)) {
+                throw new AppError('CSV File is invalid', 500, true);
+            }
+        });
+    });
+
+    const createdItems = await itemRepository.bulkCreate(items);
+
+    if (!createdItems) {
+        return false;
+    }
+
+    return createdItems;
+};
+
 exports.updateStockByCSV = async (body) => {
     const transaction = await db.sequelize.transaction();
     let filePath = path.join(__basedir, '/uploads/', body.csvFileName);
@@ -112,7 +156,7 @@ exports.updateStockByCSV = async (body) => {
 
     stream.pipe(parser)
         .on('error', () => {
-            throw new AppError('Error during CSV Parsing', 500, true);
+            throw new AppError('Error during CSV handling', 500, true);
         })
         .on('data', (row) => {
             itemsToUpdate.items.push(row);
@@ -125,7 +169,8 @@ exports.updateStockByCSV = async (body) => {
             fs.unlinkSync(filePath);
             parser.end();
             stream.unpipe(parser);
-    });
+            stream.close();
+        });
 
     const batchLog = {
         affectedItemsSKUs: itemsToUpdate.items.map(i => i.SKU),
@@ -158,8 +203,16 @@ exports.exportInventoryList = async () => {
     return csvFile;
 };
 
-exports.exportInventoryListWithPickedAttributes = async () => {
-    // find all and include picked attributes, validate it
+exports.exportInventoryListWithPickedAttributes = async (attributes) => {
+    const items = await itemRepository.findAllWithIncludedAttributes(attributes);
+
+    const csvFile = generateCsvFile(Object.keys(items[0]), items);
+
+    if (!csvFile) {
+        return false;
+    }
+
+    return csvFile;
 };
 
 exports.exportPickedInventoryList = async (options) => {
@@ -172,10 +225,6 @@ exports.exportPickedInventoryList = async (options) => {
     }
 
     return csvFile;
-};
-
-exports.exportPackingList = async () => {
-
 };
 
 const generateCsvFile = (fields, data) => {
