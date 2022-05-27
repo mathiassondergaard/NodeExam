@@ -76,6 +76,20 @@ exports.findById = async (req, res, next) => {
 
 };
 
+exports.findNameByIdFromToken = async (req, res, next) => {
+
+    const name = await employeeService.findNameById(req.employeeId);
+
+    if (!name) {
+        logger.error(`${moduleName} failed to find employee name ${req.employeeId}`);
+        return next(new AppError('Failed to find employee name!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully found employee name ${req.employeeId}`);
+    return res.status(200).send(name);
+
+};
+
 exports.update = async (req, res, next) => {
 
     if (!Object.keys(req.body).length) {

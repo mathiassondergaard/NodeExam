@@ -103,6 +103,20 @@ exports.update = async (employee, transaction) => {
     return {message: `Employee ${employee.id} successfully updated!`};
 };
 
+exports.findNameById = async (id) => {
+    const employee = await Employee.findByPk(id, {
+        attributes: ['name']
+    });
+
+    if (!employee) {
+        logger.error(`${moduleName} employee ${id} not present in db / db error`);
+        throw new AppError(`Employee name ${id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} retrieved employee name by id: ${id} | ${JSON.stringify(employee)}`);
+    return employee.get({plain: true}).name;
+};
+
 exports.findById = async (id) => {
     const employee = await Employee.findByPk(id, {
         include: {

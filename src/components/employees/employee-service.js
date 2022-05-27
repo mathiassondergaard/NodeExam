@@ -52,6 +52,10 @@ exports.findById = async (id) => {
     return await employeeRepository.findById(id);
 };
 
+exports.findNameById = async (id) => {
+    return await employeeRepository.findNameById(id);
+};
+
 exports.findNameAndTitleById = async (id) => {
     return await employeeRepository.findNameAndTitleById(id);
 };

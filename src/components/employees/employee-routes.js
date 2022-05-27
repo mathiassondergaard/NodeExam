@@ -18,6 +18,8 @@ module.exports = (app) => {
 
     router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
+    router.get('/name', asyncHandler(verifyJwt), asyncHandler(controller.findNameByIdFromToken));
+
     router.put('/:id', asyncHandler(verifyJwt), asyncHandler(controller.update));
 
     // Admin
