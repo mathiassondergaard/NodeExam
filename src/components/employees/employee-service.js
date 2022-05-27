@@ -29,7 +29,7 @@ exports.create = async (body) => {
 
     await transaction.commit();
 
-    return true;
+    return employee;
 };
 
 exports.delete = async (id) => {

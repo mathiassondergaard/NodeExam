@@ -27,12 +27,12 @@ exports.create = async (item) => {
 exports.bulkCreate = async (items) => {
     const _items = await Item.bulkCreate(items);
 
-    if (!items ||_items.length === 0) {
+    if (!_items ||_items.length === 0) {
         logger.error(`${moduleName} could not create items`);
         throw new AppError(`Create items failed`, 500, true);
     }
 
-    logger.debug(`${moduleName} created items ${JSON.stringify(_item)}`);
+    logger.debug(`${moduleName} created items ${JSON.stringify(_items)}`);
 
     return _items.map(item => item.get({plain: true}));
 };
@@ -62,7 +62,7 @@ exports.findSKUAndStockById = async (id) => {
 };
 
 exports.findAll = async () => {
-    const items = await Item.findAll({});
+    const items = await Item.findAll({order: [["id", "DESC"]]});
 
     if (!items || items.length === 0) {
         logger.error(`${moduleName} no items present in db / db error`);
@@ -75,7 +75,7 @@ exports.findAll = async () => {
 };
 
 exports.findBySKUs = async (SKUs) => {
-    const items = await Item.findAll({ where: { SKU: SKUs}});
+    const items = await Item.findAll({ where: { SKU: SKUs}, order: [["id", "DESC"]]});
 
     if (!items || items.length === 0) {
         logger.error(`${moduleName} no items present in db / db error`);
@@ -88,7 +88,7 @@ exports.findBySKUs = async (SKUs) => {
 };
 
 exports.findByIds = async (ids) => {
-    const items = await Item.findAll({where: { id: ids}});
+    const items = await Item.findAll({where: { id: ids}, order: [["id", "DESC"]]});
 
     if (!items || items.length === 0) {
         logger.error(`${moduleName} no items present in db / db error`);
@@ -120,7 +120,10 @@ exports.findBySKUsWithIncludedAttributes = async (options) => {
         attributes: options.attributes,
         where: {
             SKU: options.SKUs,
-        }
+        },
+        order: [
+            ["SKU", "DESC"],
+        ],
     });
 
     if (!items || items.length === 0) {
@@ -152,7 +155,14 @@ exports.update = async (itemToUpdate) => {
     }
 
     logger.debug(`${moduleName} updated item, id ${itemToUpdate.id}: ${JSON.stringify(_item)}`);
-    return {message: `Item ${itemToUpdate.id} successfully updated!`};
+    return {
+        id: itemToUpdate.id,
+        name: itemToUpdate.name,
+        SKU: itemToUpdate.SKU,
+        threshold: itemToUpdate.threshold,
+        location: itemToUpdate.location,
+        lastUpdatedBy: itemToUpdate.updatedBy
+    };
 };
 
 exports.updateStock = async (itemToUpdate, transaction) => {
@@ -172,7 +182,7 @@ exports.updateStock = async (itemToUpdate, transaction) => {
     }
 
     logger.debug(`${moduleName} updated item, id ${itemToUpdate.id}: new stock: ${JSON.stringify(itemToUpdate.stock)}`);
-    return {message: `Item ${itemToUpdate.id} successfully updated!`};
+    return {id: itemToUpdate.id, stock: itemToUpdate.stock, lastUpdatedBy: itemToUpdate.updatedBy};
 };
 
 exports.updateStockOnMultiple = async (itemsToUpdate, transaction) => {
@@ -182,7 +192,7 @@ exports.updateStockOnMultiple = async (itemsToUpdate, transaction) => {
         { where: { SKU: i.SKU}, transaction }
     ));
 
-    const updated = await Promise.all(updates).catch(async () => { return null;});
+    const updated = await Promise.all(updates).catch(async () => {return null;});
 
     if (!updated || updated.length === 0) {
         logger.error(`${moduleName} failed to update item stock`);
@@ -191,7 +201,7 @@ exports.updateStockOnMultiple = async (itemsToUpdate, transaction) => {
 
     logger.debug(`${moduleName} updated item stock by SKUs: ${JSON.stringify(itemsToUpdate.SKUs)}`);
 
-    return true;
+    return itemsToUpdate.items.map(i => { return {SKU: i.SKU, stock: i.stock, lastUpdatedBy: itemsToUpdate.updatedBy}});
 };
 
 exports.updateLocation = async (itemToUpdate) => {
@@ -210,7 +220,7 @@ exports.updateLocation = async (itemToUpdate) => {
     }
 
     logger.debug(`${moduleName} updated item location, id ${itemToUpdate.id}: new location: ${JSON.stringify(itemToUpdate.location)}`);
-    return {message: `Item ${itemToUpdate.id} location successfully updated!`};
+    return {id: itemToUpdate.id, location: itemToUpdate.location, lastUpdatedBy: itemToUpdate.updatedBy};
 };
 
 exports.findById = async (id) => {
@@ -241,7 +251,7 @@ exports.updateStatus = async (itemToUpdate) => {
     }
 
     logger.debug(`${moduleName} updated item status with id ${itemToUpdate.id}: ${JSON.stringify(itemToUpdate.status)}`);
-    return {message: `Item ${itemToUpdate.id} status successfully updated! New status: ${itemToUpdate.status}`};
+    return {id: itemToUpdate.id, status: itemToUpdate.status, lastUpdatedBy: itemToUpdate.updatedBy};
 };
 
 exports.delete = async (id) => {

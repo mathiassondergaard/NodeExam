@@ -10,13 +10,9 @@ const passwordTokenRepository = require('./passwordtoken-repository');
 const refreshTokenRepository = require('./refreshtoken-repository');
 const roleRepository = require('./role-repository');
 const {AppError} = require('../../error');
-const {logger} = require('../../common/log');
 const {mailer} = require('../../common/mailer');
 const key = fs.readFileSync('private-key.pem');
 
-const moduleName = 'auth-service.js -';
-
-//TODO: ADD LOGGING MESSAGES
 
 // USERS
 

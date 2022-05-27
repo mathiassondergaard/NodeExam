@@ -59,6 +59,15 @@ module.exports.modGuard = (req, res, next) => {
     throw new AppError('Mod role required - Unauthorized!', 403, true);
 };
 
+module.exports.verifySocketToken = async (token) => {
+    const decoded = await jwt.verify(token, publicKey, {algorithms: [process.env.KEY_ALGORITHM]});
+    if (!decoded) {
+        logger.error(`${moduleName} socket token is invalid`);
+        return false;
+    }
+    return decoded;
+};
+
 const getJwt = (req) => {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         return req.headers.authorization.split(' ')[1];

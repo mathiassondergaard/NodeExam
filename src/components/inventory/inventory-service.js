@@ -1,12 +1,10 @@
-const fs = require('fs');
 const path = require('path');
-const csv = require('fast-csv');
-const CsvParser = require('json2csv').Parser;
 
 const {AppError} = require('../../error');
 const logRepository = require('./log-repository');
 const itemRepository = require('./item-repository');
 const batchLogRepository = require('./batchlog-repository');
+const fileTools = require('./file-tools');
 const db = require("../../db");
 
 // INVENTORY
@@ -55,30 +53,14 @@ exports.updateStock = async (itemToUpdate) => {
     const updatedStock = await itemRepository.updateStock(itemToUpdate, transaction);
     const createdLog = await logRepository.create(itemLog, transaction);
 
-    if (!updatedStock || createdLog) {
+    if (!updatedStock || !createdLog) {
         await transaction.rollback();
         return false;
     }
 
     await transaction.commit();
 
-    return true;
-};
-
-const calculateAmountChanged = (newStock, oldStock) => {
-    let amountChanged = '';
-    switch (newStock) {
-        case newStock > oldStock:
-            amountChanged = `+ ${newStock -= oldStock}`;
-            break;
-        case newStock < oldStock:
-            amountChanged = `- ${oldStock -= newStock}`;
-            break;
-        case newStock === oldStock:
-            amountChanged = 'No change';
-            break;
-    }
-    return amountChanged;
+    return updatedStock;
 };
 
 exports.updateLocation = async (itemToUpdate) => {
@@ -88,7 +70,7 @@ exports.updateLocation = async (itemToUpdate) => {
 exports.updateStatus = async (itemToUpdate) => {
     const statusValidation = ['HEALTHY', 'CAUTION', 'CRITICAL'];
 
-    if (!statusValidation.contains(itemToUpdate.status.toUpperCase())) {
+    if (!statusValidation.includes(itemToUpdate.status.toUpperCase())) {
         return false;
     }
 
@@ -99,39 +81,20 @@ exports.delete = async (id) => {
     return await itemRepository.delete(id);
 };
 
-exports.importInventoryList = async (body) => {
-    let filePath = path.join(__basedir, '/uploads/', body.csvFileName);
-    const parser = csv.parse({headers: true});
-    const stream = fs.createReadStream(filePath);
+exports.importInventoryList = async (filename) => {
+    let filePath = path.join(__basedir, '/resources/uploads/', filename);
 
-    const items = [];
+    const items = await fileTools.readCsv(filePath, {delimiter: ';', headers: true});
 
-    stream.pipe(parser)
-        .on('error', () => {
-            throw new AppError('Error during CSV handling', 500, true);
-        })
-        .on('data', (row) => {
-            items.push(row);
-        })
-        .on('end', () => {
-            stream.destroy();
-        })
-        .on('close', () => {
-            console.log('Destroyed stream and closed file!'); //replace with logger
-            fs.unlinkSync(filePath);
-            parser.end();
-            stream.unpipe(parser);
-            stream.close();
-        });
+    validateCsvHeaders(['name', 'SKU', 'stock', 'threshold', 'location'], Object.keys(items[0]))
 
-    const headersValidation = ['name', 'SKU', 'stock', 'threshold', 'location']
-    const headers = items.map(item => Object.keys(item));
-    headers.forEach(i => {
-        i.forEach(x => {
-            if (!headersValidation.includes(x)) {
-                throw new AppError('CSV File is invalid', 500, true);
-            }
-        });
+    items.forEach(i => {
+        if (typeof i.stock === 'string') {
+            i.stock = parseInt(i.stock);
+        }
+        if (typeof i.threshold === 'string') {
+            i.stock = parseInt(i.threshold);
+        }
     });
 
     const createdItems = await itemRepository.bulkCreate(items);
@@ -140,37 +103,31 @@ exports.importInventoryList = async (body) => {
         return false;
     }
 
+    await fileTools.deleteFile(filePath);
+
     return createdItems;
 };
 
 exports.updateStockByCSV = async (body) => {
     const transaction = await db.sequelize.transaction();
-    let filePath = path.join(__basedir, '/uploads/', body.csvFileName);
-    const parser = csv.parse({ headers: true });
-    const stream = fs.createReadStream(filePath);
+    let filePath = path.join(__basedir, '/resources/uploads/', body.filename);
 
     let itemsToUpdate = {
-        items: [],
+        items: await fileTools.readCsv(filePath, {delimiter: ';', headers: true}),
         updatedBy: body.updatedBy,
     };
 
-    stream.pipe(parser)
-        .on('error', () => {
-            throw new AppError('Error during CSV handling', 500, true);
-        })
-        .on('data', (row) => {
-            itemsToUpdate.items.push(row);
-        })
-        .on('end', () => {
-            stream.destroy();
-        })
-        .on('close', () => {
-            console.log('Destroyed stream and closed file!'); //replace with logger
-            fs.unlinkSync(filePath);
-            parser.end();
-            stream.unpipe(parser);
-            stream.close();
-        });
+    // used because csv parser sometimes returns stock as string
+    itemsToUpdate.items.forEach(i => {
+        if (typeof i.stock === 'string') {
+            i.stock = parseInt(i.stock);
+        }
+        if (typeof i.threshold === 'string') {
+            i.stock = parseInt(i.threshold);
+        }
+    });
+
+    validateCsvHeaders(['SKU', 'stock'], Object.keys(itemsToUpdate.items[0]))
 
     const batchLog = {
         affectedItemsSKUs: itemsToUpdate.items.map(i => i.SKU),
@@ -187,14 +144,15 @@ exports.updateStockByCSV = async (body) => {
     }
 
     await transaction.commit();
+    await fileTools.deleteFile(filePath);
 
-    return {message: 'Successfully updated items by CSV'};
+    return updatedItems;
 };
 
 exports.exportInventoryList = async () => {
     const items = await itemRepository.findAll();
 
-    const csvFile = generateCsvFile(Object.keys(items[0]), items);
+    const csvFile = await fileTools.generateCsvFile(Object.keys(items[0]), items);
 
     if (!csvFile) {
         return false;
@@ -206,7 +164,7 @@ exports.exportInventoryList = async () => {
 exports.exportInventoryListWithPickedAttributes = async (attributes) => {
     const items = await itemRepository.findAllWithIncludedAttributes(attributes);
 
-    const csvFile = generateCsvFile(Object.keys(items[0]), items);
+    const csvFile = await fileTools.generateCsvFile(Object.keys(items[0]), items);
 
     if (!csvFile) {
         return false;
@@ -218,22 +176,13 @@ exports.exportInventoryListWithPickedAttributes = async (attributes) => {
 exports.exportPickedInventoryList = async (options) => {
     const items = await itemRepository.findBySKUsWithIncludedAttributes(options);
 
-    const csvFile = generateCsvFile(Object.keys(items[0]), items);
+    const csvFile = await fileTools.generateCsvFile(Object.keys(items[0]), items);
 
     if (!csvFile) {
         return false;
     }
 
     return csvFile;
-};
-
-const generateCsvFile = (fields, data) => {
-    try {
-        const parser = new CsvParser(fields);
-        return parser.parse(data);
-    } catch (err) {
-        return false;
-    }
 };
 
 // INVENTORY LOGS
@@ -262,4 +211,28 @@ exports.deleteBatchLog = async (id) => {
     return await batchLogRepository.delete(id);
 };
 
+// Helper
 
+const calculateAmountChanged = (newStock, oldStock) => {
+    let amountChanged = '';
+
+    if (newStock > oldStock) {
+        amountChanged = `+${newStock - oldStock}`;
+    }
+    else if (newStock < oldStock) {
+        amountChanged = `-${oldStock - newStock}`;
+    }
+    else if (newStock === oldStock) {
+        amountChanged = 'No change';
+    }
+
+    return amountChanged;
+};
+
+const validateCsvHeaders = (validation, headers) => {
+    headers.forEach(i => {
+        if (!validation.includes(i)) {
+            throw new AppError('CSV File is invalid', 500, true);
+        }
+    });
+};

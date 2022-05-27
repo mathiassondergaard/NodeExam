@@ -22,7 +22,7 @@ exports.create = async (task) => {
     await _task.setAssignedEmployees(task.assignedEmployees)
     logger.debug(`${moduleName} created task ${JSON.stringify(_task)}`);
 
-    return true;
+    return task.get({plain: true});
 };
 
 exports.findAll = async () => {

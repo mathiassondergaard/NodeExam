@@ -14,6 +14,7 @@ const Item = db.sequelize.define("items", {
     SKU: {
         type: db.Sequelize.STRING,
         allowNull: false,
+        unique: true,
         validate: {
             notEmpty: {
                 args: true,
@@ -34,7 +35,7 @@ const Item = db.sequelize.define("items", {
                 msg: "Stock cannot be empty!",
             },
             min: {
-                args: 0,
+                args: [0],
                 msg: "Stock cannot be below zero!",
             },
         },
@@ -63,7 +64,7 @@ const Item = db.sequelize.define("items", {
                 msg: "Threshold cannot be empty!",
             },
             min: {
-                args: 0,
+                args: [0],
                 msg: "Threshold cannot be below zero!",
             },
         },

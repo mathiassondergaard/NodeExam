@@ -27,16 +27,12 @@ const BatchLog = db.sequelize.define("batch_logs", {
     },
     note: {
         type: db.Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         validate: {
-            notEmpty: {
-                args: true,
-                msg: "Note cannot be empty",
-            },
-            max: {
-                args: 200,
-                msg: "Note cannot be longer than 200 characters!",
-            },
+            len: {
+                args: [0,200],
+                msg: "Note cannot be larger than 200 characters"
+            }
         },
     },
 });
