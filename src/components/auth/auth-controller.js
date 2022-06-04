@@ -12,7 +12,7 @@ exports.signIn = async (req, res, next) => {
 
     const signedIn = await authService.signIn(req.body);
 
-    switch(signedIn) {
+    switch (signedIn) {
         case 'USERNAME_INVALID':
             logger.error(`${moduleName} invalid username ${req.body.username}`);
             return next(new AppError('Username is invalid!', 401, true));
@@ -25,8 +25,8 @@ exports.signIn = async (req, res, next) => {
     }
 
     logger.info(`${moduleName} user successfully authenticated ${JSON.stringify(signedIn.user.username)}`);
-
-    res.status(200).send({
+    res.cookie('jwt', signedIn.accessToken, { secure: false, maxAge: 86400, httpOnly: true });
+    return res.status(200).send({
         id: signedIn.user.id,
         username: signedIn.user.username,
         email: signedIn.user.email,
@@ -82,6 +82,11 @@ exports.updateUser = async (req, res, next) => {
 
     logger.info(`${moduleName} updated user id ${req.params.id}`);
     res.status(200).send(updated);
+};
+
+// handled in middleware, returns 200 if it goes here.
+exports.verifyToken = (req, res) => {
+    res.status(200).send({message: 'Token was verified!'});
 };
 
 exports.changePasswordForNewUser = async (req, res, next) => {
@@ -207,5 +212,10 @@ exports.refreshAccessToken = async (req, res, next) => {
         accessToken: refreshed.accessToken,
         refreshToken: refreshed.refreshToken,
     });
+};
+
+exports.logOut = (req, res) => {
+    res.clearCookie('jwt');
+    res.end();
 };
 

@@ -28,13 +28,11 @@ const handleErr = (err, res, production) => {
     }
     else if (err instanceof TokenExpiredError) {
         logger.error(`${moduleName} access token is expired`);
-        res.status(401).json({message: 'Access token was expired - Unauthorized!'});
-        return;
+        return res.status(401).json({message: 'Access token was expired - Unauthorized!'});
     }
     else if (err instanceof JsonWebTokenError) {
         logger.error(`${moduleName} access token not valid`);
-        res.status(401).json({message: 'Access token not valid - Unauthorized!'});
-        return;
+        return res.status(401).json({message: 'Access token not valid - Unauthorized!'});
     }
 
     if (!production) {

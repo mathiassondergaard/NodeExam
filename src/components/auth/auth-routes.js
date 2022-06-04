@@ -16,11 +16,15 @@ module.exports = (app) => {
 
     // no auth
 
+    router.get('/log-out', controller.logOut);
+
     router.post('/sign-in', asyncHandler(controller.signIn));
 
     router.patch('/users/first-login', asyncHandler(controller.changePasswordForNewUser));
 
     // JWT
+
+    router.get('/token/verify', asyncHandler(verifyJwt), controller.verifyToken);
 
     router.get('/users/:id', asyncHandler(verifyJwt), asyncHandler(controller.userInfo));
 
@@ -31,6 +35,11 @@ module.exports = (app) => {
     router.post('/users/token/refresh', asyncHandler(verifyJwt), asyncHandler(controller.refreshAccessToken));
 
     // JWT & Admin
+
+    router.get('/admin/token/verify', [
+        asyncHandler(verifyJwt),
+        adminGuard,
+    ], controller.verifyToken);
 
     router.get('/users',
         [

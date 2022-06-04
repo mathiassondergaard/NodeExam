@@ -1,4 +1,5 @@
 const express = require('express')
+const cookieParser = require('cookie-parser');
 const {errorHandler} = require("./error");
 const cors = require('cors');
 require('dotenv').config();
@@ -10,8 +11,8 @@ const {router: loggingRouter} = require('./components/logging');
 const {router: inventoryRouter} = require('./components/inventory');
 const path = require("path");
 const {verifyJwtForSocket} = require('./common');
-const { createServer } = require("http");
-const { Server } = require("socket.io");
+const {createServer} = require("http");
+const {Server} = require("socket.io");
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,7 +27,7 @@ db.sequelize.sync().then(() => console.log(`Successfully synced DB models`));
 
 // Socket.io
 io.use(async (socket, next) => {
-    if (!socket.handshake.query || !socket.handshake.query.token){
+    if (!socket.handshake.query || !socket.handshake.query.token) {
         console.log('Authentication failed');
         next(new Error('No token submitted!'));
     }
@@ -48,21 +49,19 @@ io.use(async (socket, next) => {
 // Root project directory path
 global.__basedir = path.resolve(__dirname, '..');
 
-let corsOptions = {
-    origin: ''
-};
-
-if (process.env.RESOURCE_PORT) {
-    corsOptions.origin = 'http://localhost:3001';
-} else {
-    corsOptions.origin = 'http://localhost:8081';
-}
-
-app.use(cors(corsOptions));
+app.use(cors({
+    origin : [ 'http://localhost:5002' , 'http://localhost:5002/', '127.0.0.1:5002' ],
+    methods:["GET" , "POST" , "PUT", "PATCH", "DELETE"],
+    credentials: true
+}));
+app.options('*', cors());
 
 // content types
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+// cookie parser
+app.use(cookieParser());
 
 // Routes
 authRouter(app);

@@ -75,6 +75,9 @@ const getJwt = (req) => {
     else if (req.query && req.query.token) {
         return req.query.token;
     }
+    else if (req.cookies.jwt) {
+        return req.cookies.jwt;
+    }
     return null;
 };
 
