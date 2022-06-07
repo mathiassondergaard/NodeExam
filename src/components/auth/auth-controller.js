@@ -24,8 +24,13 @@ exports.signIn = async (req, res, next) => {
             return next(new AppError('Unexpected error occurred!', 500, true));
     }
 
+    let expiresAt = new Date();
+    expiresAt.setSeconds(
+        expiresAt.getSeconds() + 86400
+    );
+
     logger.info(`${moduleName} user successfully authenticated ${JSON.stringify(signedIn.user.username)}`);
-    res.cookie('jwt', signedIn.accessToken, { secure: false, maxAge: 86400, httpOnly: true });
+    res.cookie('jwt', signedIn.accessToken, { secure: false, expires: expiresAt, httpOnly: true });
     return res.status(200).send({
         id: signedIn.user.id,
         username: signedIn.user.username,
@@ -96,10 +101,10 @@ exports.changePasswordForNewUser = async (req, res, next) => {
     switch (updated) {
         case 'INVALID':
             logger.error(`${moduleName} invalid token ${req.body.token}`);
-            return next(new AppError('Token is invalid!', 401, true));
+            return next(new AppError('Token is invalid, please contact administrator!', 401, true));
         case 'EXPIRED':
             logger.error(`${moduleName} token is expired ${req.body.token}`);
-            return next(new AppError('Token is expired!', 401, true));
+            return next(new AppError('Token is expired, please contact administrator!', 401, true));
         case false:
             logger.error(`${moduleName} unexpected error on change pw for new user username ${req.body.username}`);
             return next(new AppError('Unexpected error occurred', 500, true));
@@ -215,6 +220,7 @@ exports.refreshAccessToken = async (req, res, next) => {
 };
 
 exports.logOut = (req, res) => {
+    logger.info('logged out');
     res.clearCookie('jwt');
     res.end();
 };

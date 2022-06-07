@@ -34,6 +34,9 @@ const handleErr = (err, res, production) => {
         logger.error(`${moduleName} access token not valid`);
         return res.status(401).json({message: 'Access token not valid - Unauthorized!'});
     }
+    else if (err.message === 'No token was provided') {
+        return res.status(403).json({message: err.message});
+    }
 
     if (!production) {
         logger.error(`${moduleName} ${JSON.stringify({status: err.status, message: err.message})}`);

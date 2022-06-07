@@ -193,6 +193,18 @@ exports.findAllByEmployeeId = async (req, res, next) => {
     return res.status(200).send(tasks);
 };
 
+exports.findAllByTokenEmployeeId = async (req, res, next) => {
+    const tasks = await taskService.findAllByEmployeeId(req.employeeId);
+
+    if (!tasks) {
+        logger.error(`${moduleName} failed to find all tasks by employee`);
+        return next(new AppError('Failed to find tasks by employee!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully found tasks for employee id ${req.params.employeeId}`);
+    return res.status(200).send(tasks);
+};
+
 exports.findAllByAssignee = async (req, res, next) => {
     const tasks = await taskService.findAllByAssignee(req.params.assignee);
 

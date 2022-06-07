@@ -44,6 +44,7 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
     const passwordToken = await createPasswordToken(user, transaction);
 
     if (user && passwordToken) {
+        const link = `${process.env.WMS_FRONTEND_BASE}/first/${passwordToken}`
         return await mailer.sendEmail(
             userToCreate.email,
             'WMS - An account was created for you',
@@ -51,12 +52,11 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
         <br/>
         <p>In order to access the WMS, you must reset your password.<p>
         <br/>
-        <p>Please go to LINK HERE and use the following details:<p>
+        <p>Please click the <a href={link}>link</a> and use the following details:<p>
         <br/>
         <br/>
         <h2><strong>USERNAME:</strong> ${userToCreate.username}</h2>
         <br/>
-        <h2><strong>TOKEN:</strong> ${passwordToken}</h2>
         <br/>
         <p>For security reasons, your token expires in 24 hours.</p>
         <br/>
@@ -74,7 +74,7 @@ exports.signIn = async (body) => {
     if (!user) {
         return 'USERNAME_INVALID';
     }
-    if (!bcrypt.compareSync(body.password, user.password)) {
+    if (!body.password || !bcrypt.compareSync(body.password, user.password)) {
         return 'PASSWORD_INVALID';
     }
 

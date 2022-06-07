@@ -1,6 +1,6 @@
 const controller = require('./task-controller');
 const router = require('express').Router();
-const {apiLimiter, adminGuard, verifyJwt} = require('../../common');
+const {apiLimiter, verifyJwt} = require('../../common');
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
@@ -28,6 +28,8 @@ module.exports = (app) => {
 
     router.patch('/:id/completed-at', asyncHandler(verifyJwt), asyncHandler(controller.updateCompletedAt));
 
+    router.get('/employee/internal', asyncHandler(verifyJwt), asyncHandler(controller.findAllByTokenEmployeeId));
+
     router.get('/employee/:employeeId', asyncHandler(verifyJwt), asyncHandler(controller.findAllByEmployeeId));
 
     router.get('/assignee/:assignee', asyncHandler(verifyJwt), asyncHandler(controller.findAllByAssignee));
@@ -38,12 +40,7 @@ module.exports = (app) => {
 
     router.put('/:id',asyncHandler(verifyJwt), asyncHandler(controller.update));
 
-    // Admin
-
-    router.get('/', [
-        asyncHandler(verifyJwt),
-        adminGuard
-    ], asyncHandler(controller.findAll));
+    router.get('/', asyncHandler(verifyJwt), asyncHandler(controller.findAll));
 
     app.use('/api/resources/tasks', router);
 

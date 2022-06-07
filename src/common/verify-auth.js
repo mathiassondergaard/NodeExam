@@ -13,7 +13,6 @@ module.exports.verifyToken = async (req, res, next) => {
 
         // Return 403 if token is not provided
         if (!token) {
-            logger.error(`${moduleName} no token provided`);
             throw new AppError('No token was provided', 403, true);
         }
 
@@ -28,7 +27,6 @@ module.exports.verifyToken = async (req, res, next) => {
         req.userId = decoded.id;
         req.employeeId = decoded.employeeId;
 
-        logger.info(`${moduleName} Token successfully verified, user ${decoded.id}, employee ${decoded.employeeId}`);
         return next();
 };
 
