@@ -22,18 +22,6 @@ exports.create = async (body, employeeId) => {
     return await taskRepository.create(taskToCreate);
 };
 
-exports.updateAssignedEmployees = async (taskToUpdate, employeeId) => {
-    await validatePermissionsBasedOnAssignee(taskToUpdate.id, employeeId, 'update');
-
-    const updated = await taskRepository.updateAssignedEmployees(taskToUpdate);
-
-    if (!updated) {
-        return false;
-    }
-
-    return updated;
-};
-
 exports.delete = async (id, employeeId) => {
     await validatePermissionsBasedOnAssignee(id, employeeId, 'delete');
 
@@ -73,6 +61,9 @@ exports.update = async (body, employeeId) => {
         description: body.description,
         level: body.level,
         status: body.status,
+        startedAt: body.completedAt,
+        completedAt: body.completedAt,
+        assignedEmployees: body.assignedEmployees
     };
 
     return await taskRepository.update(taskToUpdate);
@@ -102,22 +93,32 @@ exports.updateLevel = async (taskToUpdate, employeeId) => {
     return await taskRepository.updateLevel(taskToUpdate);
 };
 
-exports.updateStartedAt = async (taskToUpdate, employeeId) => {
+exports.startTask = async (taskToUpdate, employeeId) => {
     await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
-    if (!taskToUpdate.date) {
-        taskToUpdate.date = new Date();
+    taskToUpdate.date = new Date();
+
+    const message = await taskRepository.startTask(taskToUpdate);
+
+    return {
+        message: message,
+        date: taskToUpdate.date,
+        status: 'ON-GOING'
     }
-    return await taskRepository.updateStartedAt(taskToUpdate);
 };
 
-exports.updateCompletedAt = async (taskToUpdate, employeeId) => {
+exports.completeTask = async (taskToUpdate, employeeId) => {
     await validatePermissionsBasedOnAssignedEmployee(taskToUpdate.id, employeeId, 'update');
 
-    if (!taskToUpdate.date) {
-        taskToUpdate.date = new Date();
+    taskToUpdate.date = new Date();
+
+    const message = await taskRepository.completeTask(taskToUpdate);
+
+    return {
+        message: message,
+        date: taskToUpdate.date,
+        status: 'COMPLETED'
     }
-    return await taskRepository.updateCompletedAt(taskToUpdate);
 };
 
 exports.findAllByEmployeeId = async (employeeId) => {

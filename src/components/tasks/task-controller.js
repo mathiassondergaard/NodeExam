@@ -20,7 +20,6 @@ exports.create = async (req, res, next) => {
 
     logger.info(`${moduleName} successfully created task ${JSON.stringify(created)}`);
     return res.status(201).send(created);
-
 };
 
 exports.delete = async (req, res, next) => {
@@ -83,26 +82,6 @@ exports.update = async (req, res, next) => {
     res.status(200).send(updated);
 };
 
-exports.updateAssignedEmployees = async (req, res, next) => {
-
-    if (!Object.keys(req.body).length) {
-        logger.error(`${moduleName} empty body received`);
-        return next(new AppError('Please provide a body!', 400, true));
-    }
-
-    req.body.id = req.params.id;
-
-    const updated = await taskService.updateAssignedEmployees(req.body, req.employeeId);
-
-    if (!updated) {
-        logger.error(`${moduleName} failed to update task assigned employees`);
-        return next(new AppError('Failed to update task!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully updated task assigned employees ${req.params.id}`);
-    res.status(200).send(updated);
-};
-
 exports.updateStatus = async (req, res, next) => {
     if (!req.params.status) {
         logger.error(`${moduleName} no status received`);
@@ -147,37 +126,35 @@ exports.updateLevel = async (req, res, next) => {
     res.status(200).send(updated);
 };
 
-exports.updateCompletedAt = async (req, res, next) => {
+exports.completeTask = async (req, res, next) => {
     const taskToUpdate = {
         id: req.params.id,
-        date: req.body.date
     };
 
-    const updated = await taskService.updateCompletedAt(taskToUpdate, req.employeeId);
+    const updated = await taskService.completeTask(taskToUpdate, req.employeeId);
 
     if (!updated) {
-        logger.error(`${moduleName} failed to update task completed at`);
-        return next(new AppError('Failed to update task completed at!', 500, true));
+        logger.error(`${moduleName} failed complete task`);
+        return next(new AppError('Failed to complete task!', 500, true));
     }
 
-    logger.info(`${moduleName} successfully updated task completed at ${req.params.id}, ${req.body.date}`);
+    logger.info(`${moduleName} successfully completed task! ${req.params.id}`);
     res.status(200).send(updated);
 };
 
-exports.updateStartedAt = async (req, res, next) => {
+exports.startTask = async (req, res, next) => {
     const taskToUpdate = {
         id: req.params.id,
-        date: req.body.date
     };
 
-    const updated = await taskService.updateStartedAt(taskToUpdate, req.employeeId);
+    const updated = await taskService.startTask(taskToUpdate, req.employeeId);
 
     if (!updated) {
-        logger.error(`${moduleName} failed to update task started at`);
-        return next(new AppError('Failed to update task started at!', 500, true));
+        logger.error(`${moduleName} failed to start task`);
+        return next(new AppError('Failed to start task!', 500, true));
     }
 
-    logger.info(`${moduleName} successfully updated task started at ${req.params.id}, ${req.params.status}`);
+    logger.info(`${moduleName} successfully started task ${req.params.id}`);
     res.status(200).send(updated);
 };
 

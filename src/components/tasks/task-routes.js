@@ -22,19 +22,17 @@ module.exports = (app) => {
 
     router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
-    router.patch('/:id/started-at', asyncHandler(verifyJwt), asyncHandler(controller.updateStartedAt));
+    router.patch('/:id/start', asyncHandler(verifyJwt), asyncHandler(controller.startTask));
 
     router.patch('/:id/level/:level', asyncHandler(verifyJwt), asyncHandler(controller.updateLevel));
 
-    router.patch('/:id/completed-at', asyncHandler(verifyJwt), asyncHandler(controller.updateCompletedAt));
+    router.patch('/:id/complete', asyncHandler(verifyJwt), asyncHandler(controller.completeTask));
 
     router.get('/employee/internal', asyncHandler(verifyJwt), asyncHandler(controller.findAllByTokenEmployeeId));
 
     router.get('/employee/:employeeId', asyncHandler(verifyJwt), asyncHandler(controller.findAllByEmployeeId));
 
     router.get('/assignee/:assignee', asyncHandler(verifyJwt), asyncHandler(controller.findAllByAssignee));
-
-    router.patch('/:id/assigned-employees', asyncHandler(verifyJwt), asyncHandler(controller.updateAssignedEmployees));
 
     router.patch('/:id/status/:status', asyncHandler(verifyJwt), asyncHandler(controller.updateStatus));
 

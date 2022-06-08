@@ -49,8 +49,8 @@ exports.findAll = async (req, res, next) => {
 
 };
 
-exports.findEmployeesNames = async (req, res, next) => {
-    const employees = await employeeService.findAll();
+exports.findEmployeesNamesAndIds = async (req, res, next) => {
+    const employees = await employeeService.findAllEmployeesNamesAndIds();
 
     if (!employees) {
         logger.error(`${moduleName} failed to find all employees`);
@@ -59,7 +59,6 @@ exports.findEmployeesNames = async (req, res, next) => {
 
     logger.info(`${moduleName} successfully found all employees`);
     return res.status(200).send(employees);
-
 };
 
 exports.findById = async (req, res, next) => {

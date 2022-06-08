@@ -18,7 +18,9 @@ module.exports = (app) => {
 
     router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
-    router.get('/name', asyncHandler(verifyJwt), asyncHandler(controller.findNameByIdFromToken));
+    router.get('/property/names', asyncHandler(verifyJwt), asyncHandler(controller.findEmployeesNamesAndIds));
+
+    router.get('/property/name', asyncHandler(verifyJwt), asyncHandler(controller.findNameByIdFromToken));
 
     router.put('/:id', asyncHandler(verifyJwt), asyncHandler(controller.update));
 
