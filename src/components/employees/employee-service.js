@@ -79,6 +79,9 @@ exports.updateTitle = async (employeeToUpdate, loggedInEmployee) => {
 exports.findEmployeeDetails = async (id, userId) => {
     const employee = await employeeRepository.findById(id);
     const user = await authService.findUserById(userId);
+    const address = employee.address;
+
+    delete employee.address;
 
     if (!employee || !user) {
         return false;
@@ -86,7 +89,8 @@ exports.findEmployeeDetails = async (id, userId) => {
 
     return {
         employee: employee,
-        user: user
+        address: address,
+        user: user,
     };
 };
 

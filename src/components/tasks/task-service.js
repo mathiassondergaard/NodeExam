@@ -66,6 +66,13 @@ exports.update = async (body, employeeId) => {
         assignedEmployees: body.assignedEmployees
     };
 
+    if (taskToUpdate.startedAt && !taskToUpdate.completedAt) {
+        taskToUpdate.status = 'ON-GOING';
+    }
+    else if (taskToUpdate.completedAt) {
+        taskToUpdate.status = 'COMPLETED';
+    }
+
     return await taskRepository.update(taskToUpdate);
 };
 
