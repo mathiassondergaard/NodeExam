@@ -75,6 +75,61 @@ exports.findById = async (req, res, next) => {
 
 };
 
+exports.findEmployeeDetails = async (req, res, next) => {
+    const employeeDetails = await employeeService.findEmployeeDetails(req.employeeId, req.userId);
+
+    if (!employeeDetails) {
+        logger.error(`${moduleName} failed to find employee details emp ${req.employeeId} user ${req.userId}`);
+        return next(new AppError('Failed to find employee details!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully found employee details emp ${req.employeeId} user ${req.userId}`);
+    return res.status(200).send(employeeDetails);
+
+};
+
+exports.editOwnDetails = async (req, res, next) => {
+    if (!Object.keys(req.body).length) {
+        logger.error(`${moduleName} empty body received`);
+        return next(new AppError('Please provide a body!', 400, true));
+    }
+
+    req.body.employee.id = req.employeeId;
+    req.body.user.id = req.userId;
+
+    const updated = await employeeService.updateOwnDetails(req.body);
+
+    if (!updated) {
+        logger.error(`${moduleName} failed to update employee details ${req.employeeId}`);
+        return next(new AppError('Failed to update your details!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully updated employee details ${req.employeeId}`);
+    res.sendStatus(200);
+};
+
+exports.updateTitle = async (req, res, next) => {
+    if (!req.params.title) {
+        logger.error(`${moduleName} no title received`);
+        return next(new AppError('Please provide a title!', 400, true));
+    }
+
+    const employeeToUpdate = {
+        id: req.params.id,
+        title: req.params.title
+    };
+
+    const updated = await employeeService.updateTitle(employeeToUpdate, req.employeeId);
+
+    if (!updated) {
+        logger.error(`${moduleName} failed to update employee title`);
+        return next(new AppError('Failed to update employee title!', 500, true));
+    }
+
+    logger.info(`${moduleName} successfully updated employee title ${req.params.id}, ${req.params.title}`);
+    res.status(200).send(updated);
+};
+
 exports.findNameByIdFromToken = async (req, res, next) => {
 
     const name = await employeeService.findNameById(req.employeeId);

@@ -26,7 +26,7 @@ module.exports = (app) => {
 
     router.get('/token/verify', asyncHandler(verifyJwt), controller.verifyToken);
 
-    router.get('/users/:id', asyncHandler(verifyJwt), asyncHandler(controller.userInfo));
+    router.get('/users/:id', asyncHandler(verifyJwt), asyncHandler(controller.findUserById));
 
     router.put('/users/:id', asyncHandler(verifyJwt), asyncHandler(controller.updateUser));
 

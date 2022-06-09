@@ -5,12 +5,14 @@ const {AppError} = require("../../error");
 const moduleName = 'auth-controller.js';
 
 exports.signIn = async (req, res, next) => {
-    if (!Object.keys(req.body).length) {
-        logger.error(`${moduleName} empty body received`);
-        return next(new AppError('Please provide a body!', 400, true));
+    if (!req.headers.authorization) {
+        logger.error(`${moduleName} empty auth header received`);
+        return next(new AppError('Please provide username/password!', 400, true));
     }
 
-    const signedIn = await authService.signIn(req.body);
+    const usernameAndPw = req.headers.authorization;
+
+    const signedIn = await authService.signIn(usernameAndPw);
 
     switch (signedIn) {
         case 'USERNAME_INVALID':
@@ -41,9 +43,21 @@ exports.signIn = async (req, res, next) => {
     });
 };
 
-exports.userInfo = async (req, res, next) => {
+exports.findUserById = async (req, res, next) => {
 
     const user = await authService.findUserById(req.params.id);
+
+    if (!user) {
+        logger.error(`${moduleName} User by id ${req.params.id} details not found`);
+        return next(AppError('User details could not found!', 404, true));
+    }
+
+    logger.info(`${moduleName} Retrieved user details for user: ${req.params.id}`);
+    res.status(200).send(user);
+};
+
+exports.findUserDetails = async (req, res, next) => {
+    const user = await authService.findUserById(req.userId);
 
     if (!user) {
         logger.error(`${moduleName} User by id ${req.params.id} details not found`);
@@ -114,8 +128,17 @@ exports.changePasswordForNewUser = async (req, res, next) => {
 };
 
 exports.changePassword = async (req, res, next) => {
-    req.body.id = req.params.id;
-    const updated = await authService.changePassword(req.body, req.userId);
+    if (!req.headers.authorization) {
+        logger.error(`${moduleName} empty auth header received`);
+        return next(new AppError('Please provide username/password!', 400, true));
+    }
+
+    const details = {
+        pwAndOldPw: req.headers.authorization,
+        id: req.params.id
+    }
+
+    const updated = await authService.changePassword(details, req.userId);
 
     if (!updated) {
         logger.error(`${moduleName} update pw failed ${req.params.id}`);

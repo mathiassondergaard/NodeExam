@@ -70,12 +70,29 @@ exports.findMultipleByIds = async (ids) => {
     return employees.map(employee => employee.get({plain: true}));
 };
 
+exports.updateTitle = async (employeeToUpdate) => {
+    const employee = await Employee.update({
+        title: employeeToUpdate.title,
+    }, {
+        where: {
+            id: employeeToUpdate.id
+        }
+    });
+
+    if (!employee || employee[0] === 0) {
+        logger.error(`${moduleName} employee to update title not found id: ${employeeToUpdate.id}`);
+        throw new AppError(`Employee ${employeeToUpdate.id} not found!`, 404, true);
+    }
+
+    logger.debug(`${moduleName} updated employee title with id ${employeeToUpdate.id}: ${JSON.stringify(employeeToUpdate.title)}`);
+    return `Employee ${employeeToUpdate.id} title successfully updated! New title: ${employeeToUpdate.title}`;
+};
+
 exports.update = async (employee, transaction) => {
     const _employee = await Employee.update({
             name: employee.name,
             email: employee.email,
             phone: employee.phone,
-            title: employee.title,
         }, {
         where: {
                 id: employee.id

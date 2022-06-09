@@ -68,13 +68,17 @@ exports.createUserForEmployee = async (employee, roles, transaction) => {
     return false;
 };
 
-exports.signIn = async (body) => {
-    const user = await userRepository.findByUsername(body.username);
+exports.signIn = async (usernameAndPassword) => {
+    const details = usernameAndPassword.split(':', 2);
+    const username = details[0];
+    const password = details[1];
+
+    const user = await userRepository.findByUsername(username);
 
     if (!user) {
         return 'USERNAME_INVALID';
     }
-    if (!body.password || !bcrypt.compareSync(body.password, user.password)) {
+    if (!password || !bcrypt.compareSync(password, user.password)) {
         return 'PASSWORD_INVALID';
     }
 
@@ -153,7 +157,7 @@ exports.updateUserRoles = async (id, roles) => {
     return await userRepository.updateRoles(id, rolesToUpdate);
 };
 
-exports.updateUser = async (user) => {
+exports.updateUser = async (user, transaction) => {
 
     const userToUpdate = {
         id: user.id,
@@ -161,13 +165,17 @@ exports.updateUser = async (user) => {
         email: user.email,
     };
 
-    return await userRepository.update(userToUpdate);
+    return await userRepository.update(userToUpdate, transaction);
 };
 
-exports.changePasswordOnNewUser = async (body) => {
+exports.changePasswordOnNewUser = async (tokenAndPassword) => {
     const transaction = await db.sequelize.transaction();
 
-    const pwToken = await passwordTokenRepository.findByToken(body.token);
+    const details = tokenAndPassword.split(':', 2);
+    const password = details[0];
+    const token = details[1];
+
+    const pwToken = await passwordTokenRepository.findByToken(token);
 
     if (!pwToken) {
         return 'INVALID'
@@ -177,10 +185,15 @@ exports.changePasswordOnNewUser = async (body) => {
         return 'EXPIRED'
     }
 
-    const newPassword = bcrypt.hashSync(body.password);
+    const newPassword = bcrypt.hashSync(password);
 
-    const updatedPassword = await userRepository.updatePasswordByUsername(body.username, newPassword, transaction);
-    const deletedToken = await passwordTokenRepository.deleteByToken(body.token, transaction)
+    const userToUpdate = {
+        id: pwToken.user.id,
+        password: newPassword
+    };
+
+    const updatedPassword = await userRepository.updatePasswordOnNewUser(userToUpdate, transaction);
+    const deletedToken = await passwordTokenRepository.deleteByToken(token, transaction)
 
     if (!updatedPassword || !deletedToken) {
         await transaction.rollback();
@@ -192,17 +205,27 @@ exports.changePasswordOnNewUser = async (body) => {
     return {message: 'Successfully changed password!'};
 };
 
-exports.changePassword = async (userToUpdate, loggedInUserId) => {
-    if (loggedInUserId !== parseInt(userToUpdate.id)) {
+exports.changePassword = async (details, loggedInUserId) => {
+    if (loggedInUserId !== parseInt(details.id)) {
         throw new AppError('Password could not be updated - invalid permission!', 401, true);
     }
 
-    const userPassword = await userRepository.findPasswordById(userToUpdate.id);
-    if (!bcrypt.compareSync(userToUpdate.oldPassword, userPassword)) {
-        throw new AppError('Old password does not match!', 401, true);
+    const password = details.pwAndOldPw.split(':', 2)[0];
+
+    if (password.length <= 9) {
+        throw new AppError('Password should be longer than 10 characters', 401, true);
     }
 
-    userToUpdate.password = bcrypt.hashSync(userToUpdate.password);
+    const oldPw = details.pwAndOldPw.split(':', 2)[1];
+
+    const userPassword = await userRepository.findPasswordById(details.id);
+    if (!bcrypt.compareSync(oldPw, userPassword)) {
+        throw new AppError('Old password does not match!', 401, true);
+    }
+    const userToUpdate = {
+        id: details.id,
+        password: bcrypt.hashSync(password)
+    };
 
     return await userRepository.updatePassword(userToUpdate);
 };

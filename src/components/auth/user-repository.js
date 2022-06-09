@@ -46,7 +46,7 @@ exports.findAll = async () => {
     return users.map(user => user.get({plain: true}));
 };
 
-exports.update = async (user) => {
+exports.update = async (user, transaction) => {
     const _user = await User.update({
             username: user.username,
             email: user.email,
@@ -55,11 +55,14 @@ exports.update = async (user) => {
                 id: user.id
             },
         },
+        transaction
     );
-
     if (!_user || _user[0] === 0) {
         logger.error(`${moduleName} user to update not found id: ${user.id} / db error`);
-        throw new AppError(`User ${user.id} not found!`, 404, true);
+        if (!transaction) {
+            throw new AppError(`User ${user.id} not found!`, 404, true);
+        }
+        return false;
     }
 
     logger.debug(`${moduleName} updated user, id ${user.id}: ${JSON.stringify(_user)}`);
@@ -151,25 +154,25 @@ exports.updatePassword = async (userToUpdate) => {
     }
 
     logger.debug(`${moduleName} updated user password with id ${userToUpdate.id}`);
-    return {message: `User ${userToUpdate.id} password successfully updated!`};
+    return {message: `Your password has successfully been updated!`};
 };
 
-exports.updatePasswordByUsername = async (userToUpdate, transaction) => {
+exports.updatePasswordOnNewUser = async (userToUpdate, transaction) => {
     const user = await User.update({
         password: userToUpdate.password,
     }, {
         where: {
-            username: userToUpdate.username
+            id: userToUpdate.id
         },
         transaction
     });
 
     if (!user || user[0] === 0) {
-        logger.error(`${moduleName} user to update password not found username: ${userToUpdate.username}`);
+        logger.error(`${moduleName} user to update password not found: ${userToUpdate.id}`);
         return false;
     }
 
-    logger.debug(`${moduleName} updated user password with username ${userToUpdate.username}`);
+    logger.debug(`${moduleName} updated user password with id ${userToUpdate.id}`);
     return true;
 };
 

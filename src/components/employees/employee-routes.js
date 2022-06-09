@@ -18,9 +18,13 @@ module.exports = (app) => {
 
     router.get('/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
+    router.get('/token/details', asyncHandler(verifyJwt), asyncHandler(controller.findEmployeeDetails));
+
     router.get('/property/names', asyncHandler(verifyJwt), asyncHandler(controller.findEmployeesNamesAndIds));
 
     router.get('/property/name', asyncHandler(verifyJwt), asyncHandler(controller.findNameByIdFromToken));
+
+    router.put('/employee/own-details', asyncHandler(verifyJwt), asyncHandler(controller.editOwnDetails));
 
     router.put('/:id', asyncHandler(verifyJwt), asyncHandler(controller.update));
 
@@ -29,12 +33,12 @@ module.exports = (app) => {
     router.post('/', [
         asyncHandler(verifyJwt),
         adminGuard
-    ], asyncHandler(controller.create)); //maybe needs modguard/adminguard
+    ], asyncHandler(controller.create));
 
     router.delete('/:id', [
         asyncHandler(verifyJwt),
         adminGuard
-    ], asyncHandler(controller.delete)); //maybe needs modguard/adminguard
+    ], asyncHandler(controller.delete));
 
     router.get('/', [
         asyncHandler(verifyJwt),

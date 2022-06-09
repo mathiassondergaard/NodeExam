@@ -25,7 +25,10 @@ exports.create = async (passwordToken, transaction) => {
 };
 
 exports.findByToken = async (token) => {
-    const passwordToken = await PasswordToken.findOne({ where: {token: token}});
+    const passwordToken = await PasswordToken.findOne({ where: {token: token}, include: {
+            association: 'user',
+            attributes: ['id']
+        }});
 
     if (!passwordToken) {
         logger.error(`${moduleName} passwordToken ${token} not present in db / db error`);
@@ -33,7 +36,7 @@ exports.findByToken = async (token) => {
     }
 
     logger.debug(`${moduleName} retrieved passwordToken by token: ${token} | ${JSON.stringify(passwordToken)}`);
-    return passwordToken;
+    return passwordToken.get({plain: true});
 };
 
 exports.updateExpiryByUserId = async (userId, newDate) => {

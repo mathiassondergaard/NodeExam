@@ -3,7 +3,6 @@ const {service: authService} = require('../auth');
 const {AppError} = require('../../error');
 const db = require('../../db');
 
-
 exports.create = async (body) => {
 
     const transaction = await db.sequelize.transaction();
@@ -52,6 +51,45 @@ exports.findById = async (id) => {
     return await employeeRepository.findById(id);
 };
 
+exports.updateTitle = async (employeeToUpdate, loggedInEmployee) => {
+
+    const employeeTitle = await employeeRepository.findTitleById(loggedInEmployee.id);
+    if (!employeeTitle) {
+        return false;
+    }
+    if (employeeTitle !== 'Manager') {
+        throw new AppError(`Employee ${loggedInEmployee.id} title could not be updated, invalid permission!`, 401, true);
+    }
+
+    const titleValidation = ['WORKER', 'SUPERVISOR', 'MANAGER'];
+
+    if (!titleValidation.includes(employeeToUpdate.status.toUpperCase())) {
+        throw new AppError(`Failed to update title - invalid title! ${employeeToUpdate.title}`, 500, true);
+    }
+
+    const message = employeeRepository.updateTitle(employeeToUpdate);
+
+    return {
+        message: message,
+        title: employeeToUpdate.title
+    };
+};
+
+
+exports.findEmployeeDetails = async (id, userId) => {
+    const employee = await employeeRepository.findById(id);
+    const user = await authService.findUserById(userId);
+
+    if (!employee || !user) {
+        return false;
+    }
+
+    return {
+        employee: employee,
+        user: user
+    };
+};
+
 exports.findNameById = async (id) => {
     return await employeeRepository.findNameById(id);
 };
@@ -59,6 +97,36 @@ exports.findNameById = async (id) => {
 exports.findNameAndTitleById = async (id) => {
     return await employeeRepository.findNameAndTitleById(id);
 };
+
+exports.updateOwnDetails = async (details) => {
+    const transaction = await db.sequelize.transaction();
+
+    const employeeToUpdate = {
+        id: details.employee.id,
+        name: details.employee.name,
+        email: details.employee.email,
+        phone: details.employee.phone,
+        address: details.employee.address,
+    };
+
+    const userToUpdate = {
+        id: details.user.id,
+        username: details.user.username,
+        email: details.employee.email
+    };
+
+    const updatedEmployee = await employeeRepository.update(employeeToUpdate, transaction);
+    const updatedUser = await authService.updateUser(userToUpdate, transaction);
+
+    if (!updatedEmployee || !updatedUser) {
+        await transaction.rollback();
+        return false;
+    }
+
+    await transaction.commit();
+
+    return true;
+}
 
 exports.update = async (employee, currentEmployeeId) => {
     const transaction = await db.sequelize.transaction();
@@ -78,7 +146,6 @@ exports.update = async (employee, currentEmployeeId) => {
         name: employee.name,
         email: employee.email,
         phone: employee.phone,
-        title: employee.title,
         address: employee.address,
     };
 

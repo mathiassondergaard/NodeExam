@@ -178,7 +178,7 @@ exports.findAllByTokenEmployeeId = async (req, res, next) => {
         return next(new AppError('Failed to find tasks by employee!', 500, true));
     }
 
-    logger.info(`${moduleName} successfully found tasks for employee id ${req.params.employeeId}`);
+    logger.info(`${moduleName} successfully found tasks for employee id ${req.employeeId}`);
     return res.status(200).send(tasks);
 };
 
