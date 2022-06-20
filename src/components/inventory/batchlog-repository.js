@@ -36,18 +36,6 @@ exports.findAll = async () => {
     return batchLogs.map(batchlog => batchlog.get({plain: true}));
 };
 
-exports.findById = async (id) => {
-    const batchLog = await BatchLog.findByPk(id);
-
-    if (!batchLog) {
-        logger.error(`${moduleName} batchLog ${id} not present in db / db error`);
-        throw new AppError(`BatchLog ${id} not found!`, 404, true);
-    }
-
-    logger.debug(`${moduleName} retrieved batchLog by id: ${id} | ${JSON.stringify(batchLog)}`);
-    return batchLog.get({plain: true});
-};
-
 exports.delete = async (id) => {
     const deleted = await BatchLog.destroy({
         where: {

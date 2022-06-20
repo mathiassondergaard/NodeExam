@@ -16,12 +16,18 @@ const key = fs.readFileSync('private-key.pem');
 
 // USERS
 
-exports.createUserForEmployee = async (employee, roles, transaction) => {
+exports.createUserForEmployee = async (employee, transaction) => {
 
+    const rolesToFind = ['USER'];
     const rolesToAdd = [];
+    if (['Supervisor', 'Manager'].contains(employee.title)) {
+        rolesToFind.push('MODERATOR');
+        if (employee.title === 'Manager') {
+            rolesToFind.push('ADMIN')
+        }
+    }
 
-    //TODO PROBABLY NEEDS SOME VALIDAITON OF SOME SORTS
-    for (const role of roles) {
+    for (const role of rolesToFind) {
         const result = await roleRepository.findByRole(role);
         rolesToAdd.push(result);
     }
@@ -121,10 +127,6 @@ exports.findAllUsers = async () => {
     if (!users) {
         return false;
     }
-
-    users.forEach(user => {
-        user.roles = user.roles.map(object => object.role);
-    });
 
     return users;
 };

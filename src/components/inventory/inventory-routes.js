@@ -55,16 +55,12 @@ module.exports = (app, getSocketIoInstance) => {
 
     router.get('/logs', asyncHandler(verifyJwt), asyncHandler(controller.findAllItemLogs));
 
-    router.get('/logs/:id', asyncHandler(verifyJwt), asyncHandler(controller.findItemLogById));
-
     router.delete('/logs/:id', [
         asyncHandler(verifyJwt),
         adminGuard
     ], asyncHandler(controller.deleteItemLog));
 
     router.get('/batch-logs', asyncHandler(verifyJwt), asyncHandler(controller.findAllBatchLogs));
-
-    router.get('/batch-logs/:id', asyncHandler(verifyJwt), asyncHandler(controller.findBatchLogById));
 
     router.delete('/batch-logs/:id', [
         asyncHandler(verifyJwt),

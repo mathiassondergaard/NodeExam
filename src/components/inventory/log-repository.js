@@ -37,18 +37,6 @@ exports.findAll = async () => {
     return itemLogs.map(itemlog => itemlog.get({plain: true}));
 };
 
-exports.findById = async (id) => {
-    const itemLog = await ItemLog.findByPk(id);
-
-    if (!itemLog) {
-        logger.error(`${moduleName} itemLog ${id} not present in db / db error`);
-        throw new AppError(`ItemLog ${id} not found!`, 404, true);
-    }
-
-    logger.debug(`${moduleName} retrieved itemLog by id: ${id} | ${JSON.stringify(itemLog)}`);
-    return itemLog.get({plain: true});
-};
-
 exports.delete = async (id) => {
     const deleted = await ItemLog.destroy({
         where: {

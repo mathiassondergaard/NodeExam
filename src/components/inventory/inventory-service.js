@@ -191,20 +191,23 @@ exports.findAllItemLogs = async () => {
     return await logRepository.findAll();
 };
 
-exports.findItemLogById = async (id) => {
-    return await logRepository.findById(id);
-};
-
 exports.deleteItemLog = async (id) => {
     return await logRepository.delete(id);
 };
 
 exports.findAllBatchLogs = async () => {
-    return await batchLogRepository.findAll();
-};
+    const batchLogs = await batchLogRepository.findAll();
 
-exports.findBatchLogById = async (id) => {
-    return await batchLogRepository.findById(id);
+    batchLogs.forEach(i => {
+        let SKUs = '';
+        i.affectedItemsSKUs.forEach(x => {
+            x.replace(',', ' ');
+            SKUs += x + ' ';
+        });
+        i.affectedItemsSKUs = SKUs;
+    });
+
+    return batchLogs;
 };
 
 exports.deleteBatchLog = async (id) => {

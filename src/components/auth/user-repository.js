@@ -30,10 +30,13 @@ exports.findAll = async () => {
         attributes: {
             exclude: ['password']
         },
-        include: {
+        include: [{
             association: 'roles',
             attributes: ['id', 'role']
-        },
+            }, {
+            association: 'employee',
+            attributes: ['name', 'title']
+            }],
     });
 
     if (!users || users.length === 0) {

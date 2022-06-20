@@ -281,20 +281,6 @@ exports.findAllItemLogs = async (req, res, next) => {
 
 };
 
-
-exports.findItemLogById = async (req, res, next) => {
-
-    const itemLog = await inventoryService.findItemById(req.params.id);
-
-    if (!itemLog) {
-        logger.error(`${moduleName} failed to find item log ${req.params.id}`);
-        return next(new AppError('Failed to find item log!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully found item log ${req.params.id}`);
-    return res.status(200).send(itemLog);
-};
-
 exports.deleteBatchLog = async (req, res, next) => {
     const deleted = await inventoryService.deleteBatchLog(req.params.id);
 
@@ -317,20 +303,6 @@ exports.findAllBatchLogs = async (req, res, next) => {
 
     logger.info(`${moduleName} successfully found all batch logs`);
     return res.status(200).send(batchLogs);
-};
-
-
-exports.findBatchLogById = async (req, res, next) => {
-
-    const batchLog = await inventoryService.findBatchLogById(req.params.id);
-
-    if (!batchLog) {
-        logger.error(`${moduleName} failed to find batch log ${req.params.id}`);
-        return next(new AppError('Failed to find batch log!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully found batch log ${req.params.id}`);
-    return res.status(200).send(batchLog);
 };
 
 // Helper

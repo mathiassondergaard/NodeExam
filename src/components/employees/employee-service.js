@@ -7,8 +7,6 @@ exports.create = async (body) => {
 
     const transaction = await db.sequelize.transaction();
 
-    const roles = body.roles;
-
     //if title is null, default will be used
     const employeeToCreate = {
         name: body.name,
@@ -19,7 +17,10 @@ exports.create = async (body) => {
     };
 
     const employee = await employeeRepository.create(employeeToCreate, transaction);
-    const userIsCreated = await authService.createUserForEmployee(employee, roles, transaction);
+    const userIsCreated = await authService.createUserForEmployee(
+        {name: employeeToCreate.name,
+            title: employeeToCreate.title},
+        transaction);
 
     if (!employee || !userIsCreated) {
         await transaction.rollback();
@@ -140,7 +141,7 @@ exports.update = async (employee, currentEmployeeId) => {
         if (!employeeTitle) {
             return false;
         }
-        if (employeeTitle !== 'Supervisor' || 'Manager') {
+        if (employeeTitle !== 'Supervisor' && employeeTitle !== 'Manager') {
             throw new AppError(`Employee ${employee.id} could not be updated, invalid permission!`, 401, true);
         }
     }

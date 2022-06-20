@@ -48,7 +48,7 @@ module.exports = (app) => {
         ],
         asyncHandler(controller.findUsers));
 
-    router.delete('/users',
+    router.delete('/users/:id',
         [
             asyncHandler(verifyJwt),
             adminGuard,

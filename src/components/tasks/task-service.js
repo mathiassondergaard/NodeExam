@@ -164,7 +164,7 @@ const validatePermissionsBasedOnAssignee = async (id, employeeId, method) => {
     }
 
     if (employee.name.toLowerCase() !== assignee.toLowerCase()) {
-        if ((employee.title.toLowerCase() !== 'supervisor' || 'manager')) {
+        if (employee.title !== "Supervisor" && employee.title !== "Manager") {
             throw new AppError(`Task ${id} could not be ${method}d, invalid permission!`, 401, true);
         }
     }
@@ -178,7 +178,7 @@ const validatePermissionsBasedOnAssignedEmployee = async (id, employeeId, method
     }
 
     if (!await taskRepository.checkIfEmployeeIsAssignedToTask(id, employeeId)) {
-        if ((employee.title.toLowerCase() !== 'supervisor' || 'manager')) {
+        if (employee.title !== "Supervisor" && employee.title !== "Manager") {
             throw new AppError(`Task ${id} could not be ${method}d, invalid permission!`, 401, true);
         }
     }
