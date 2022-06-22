@@ -18,10 +18,6 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {});
 
-const getSocketIoInstance = () => {
-    return io;
-};
-
 // Sync models to DB
 db.sequelize.sync().then(() => console.log(`Successfully synced DB models`));
 
@@ -67,7 +63,7 @@ app.use(cookieParser());
 authRouter(app);
 taskRouter(app);
 employeeRouter(app);
-inventoryRouter(app, getSocketIoInstance);
+inventoryRouter(app);
 loggingRouter(app);
 
 // Error Handler
@@ -84,6 +80,4 @@ httpServer.listen(PORT, () => {
     console.log(`WMS server running on port ${PORT}.`);
 });
 
-module.exports = {
-    io,
-};
+module.exports.ioInstance = io;

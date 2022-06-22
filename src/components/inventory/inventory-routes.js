@@ -4,13 +4,8 @@ const {apiLimiter, adminGuard, verifyJwt} = require('../../common');
 const upload = require('./file-tools').upload;
 const { asyncHandler } = require('../../error');
 
-module.exports = (app, getSocketIoInstance) => {
+module.exports = (app) => {
     app.use(apiLimiter);
-
-    app.use((req, res, next) => {
-       req.io = getSocketIoInstance();
-       next();
-    });
 
     app.use((req, res, next) => {
         res.header(
@@ -22,7 +17,9 @@ module.exports = (app, getSocketIoInstance) => {
 
     // Items
 
-    router.get('/items/', asyncHandler(verifyJwt), asyncHandler(controller.findAll));
+    router.get('/items', asyncHandler(verifyJwt), asyncHandler(controller.findAll));
+
+    router.post('/items', asyncHandler(verifyJwt), asyncHandler(controller.create));
 
     router.get('/items/:id', asyncHandler(verifyJwt), asyncHandler(controller.findById));
 
@@ -44,8 +41,6 @@ module.exports = (app, getSocketIoInstance) => {
     router.post('/upload/list', asyncHandler(verifyJwt), upload.single('inventory-list'), asyncHandler(controller.bulkCreateFromFile));
 
     router.put('/items/:id', asyncHandler(verifyJwt), asyncHandler(controller.updateItem));
-
-    router.patch('/items/:id/status', asyncHandler(verifyJwt), asyncHandler(controller.updateItemStatus));
 
     router.patch('/items/:id/location', asyncHandler(verifyJwt), asyncHandler(controller.updateItemLocation));
 

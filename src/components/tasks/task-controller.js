@@ -19,7 +19,7 @@ exports.create = async (req, res, next) => {
     }
 
     logger.info(`${moduleName} successfully created task ${JSON.stringify(created)}`);
-    return res.status(201).send(created);
+    return res.status(200).send(created);
 };
 
 exports.delete = async (req, res, next) => {

@@ -109,18 +109,19 @@ exports.verifyToken = (req, res) => {
 };
 
 exports.changePasswordForNewUser = async (req, res, next) => {
+    const tokenAndPassword = req.headers.authorization;
 
-    const updated = await authService.changePasswordOnNewUser(req.body);
+    const updated = await authService.changePasswordOnNewUser(tokenAndPassword);
 
     switch (updated) {
         case 'INVALID':
-            logger.error(`${moduleName} invalid token ${req.body.token}`);
+            logger.error(`${moduleName} invalid token on change pw for new user`);
             return next(new AppError('Token is invalid, please contact administrator!', 401, true));
         case 'EXPIRED':
-            logger.error(`${moduleName} token is expired ${req.body.token}`);
+            logger.error(`${moduleName} token is expired change pw for new user`);
             return next(new AppError('Token is expired, please contact administrator!', 401, true));
         case false:
-            logger.error(`${moduleName} unexpected error on change pw for new user username ${req.body.username}`);
+            logger.error(`${moduleName} unexpected error on change pw for new user username`);
             return next(new AppError('Unexpected error occurred', 500, true));
     }
 

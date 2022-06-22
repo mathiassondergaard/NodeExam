@@ -33,10 +33,13 @@ exports.findAll = async () => {
         include: [{
             association: 'roles',
             attributes: ['id', 'role']
-            }, {
+        }, {
             association: 'employee',
-            attributes: ['name', 'title']
-            }],
+            include: {
+                association: 'address',
+                attributes: ['zip', 'street', 'country', 'city'],
+            }
+        }],
     });
 
     if (!users || users.length === 0) {
@@ -109,14 +112,17 @@ exports.updateRoles = async (id, roles) => {
 exports.findByUsername = async (username) => {
     const user = await User.findOne({
         where: {username: username},
+        exclude: ['password'],
         include: [{
             association: 'roles',
             attributes: ['id', 'role']
         }, {
             association: 'employee',
-            attributes: ['id']
-        }
-        ],
+            include: {
+                association: 'address',
+                attributes: ['zip', 'street', 'country', 'city'],
+            }
+        }],
     });
 
     if (!user) {

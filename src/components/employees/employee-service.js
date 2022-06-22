@@ -16,20 +16,23 @@ exports.create = async (body) => {
         address: body.address,
     };
 
-    const employee = await employeeRepository.create(employeeToCreate, transaction);
+    const employeeIsCreated = await employeeRepository.create(employeeToCreate, transaction);
+    if (!employeeIsCreated) {
+        await transaction.rollback();
+        return false;
+    }
     const userIsCreated = await authService.createUserForEmployee(
-        {name: employeeToCreate.name,
-            title: employeeToCreate.title},
+        employeeIsCreated,
         transaction);
 
-    if (!employee || !userIsCreated) {
+    if (!userIsCreated) {
         await transaction.rollback();
         return false;
     }
 
     await transaction.commit();
 
-    return employee;
+    return await authService.findByUsername(userIsCreated.username);
 };
 
 exports.delete = async (id) => {

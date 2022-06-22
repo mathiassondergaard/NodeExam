@@ -20,9 +20,14 @@ exports.create = async (task) => {
     }
 
     await _task.setAssignedEmployees(task.assignedEmployees)
-    logger.debug(`${moduleName} created task ${JSON.stringify(_task)}`);
 
-    return {message: `Task successfully created!`};
+    logger.debug(`${moduleName} created task ${JSON.stringify(_task)}`);
+    return Task.findByPk(_task.id, {
+        include: [{
+            association: 'assignedEmployees',
+            attributes: ['id', 'name']
+        }],
+    });
 };
 
 exports.findAll = async () => {
@@ -91,7 +96,13 @@ exports.update = async (taskToUpdate) => {
     await foundTask.setAssignedEmployees(taskToUpdate.assignedEmployees)
 
     logger.debug(`${moduleName} updated task, id ${taskToUpdate.id}: ${JSON.stringify(_task)}`);
-    return {message: `Task ${taskToUpdate.id} successfully updated!`};
+
+    return Task.findByPk(taskToUpdate.id, {
+        include: [{
+            association: 'assignedEmployees',
+            attributes: ['id', 'name']
+        }],
+    });
 };
 
 exports.findById = async (id) => {

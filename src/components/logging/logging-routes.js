@@ -22,5 +22,5 @@ module.exports = (app) => {
 
     router.get('/collect', asyncHandler(verifyJwt), asyncHandler(controller.collectLogs));
 
-    app.use('/api/utility/logs/', router);
+    app.use('/api/utility/logs', router);
 };

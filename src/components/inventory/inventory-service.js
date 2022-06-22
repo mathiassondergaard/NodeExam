@@ -15,6 +15,7 @@ exports.createItem = async (item) => {
         name: item.name,
         SKU: item.SKU,
         stock: item.stock,
+        status: checkStatus(item.stock, item.threshold),
         threshold: item.threshold,
         location: item.location,
     };
@@ -31,22 +32,43 @@ exports.findItemById = async (id) => {
 };
 
 exports.updateItem = async (itemToUpdate) => {
+    itemToUpdate.status = checkStatus(itemToUpdate.stock, itemToUpdate.threshold);
     return await itemRepository.update(itemToUpdate);
+};
+
+exports.pollAndUpdateStatusBasedOnThreshold = async () => {
+    const items = await itemRepository.findAllStockAndThreshold();
+
+    const updatedItems = [];
+
+    for (const item of items) {
+        item.status = checkStatus(item.stock, item.threshold);
+
+        const updatedItem = await itemRepository.updateStatusOnPoll(item);
+        if (!updatedItems) {
+            throw new AppError('Update status on poll failed', 500, true);
+        }
+        updatedItems.push(updatedItem);
+    }
+
+    return updatedItems;
 };
 
 exports.updateStock = async (itemToUpdate) => {
     const transaction = await db.sequelize.transaction();
 
-    const SKUAndStock = await itemRepository.findSKUAndStockById(itemToUpdate.id);
+    const SKUThresholdAndStock = await itemRepository.findSKUThresholdAndStockById(itemToUpdate.id);
 
-    if (!SKUAndStock) {
+    if (!SKUThresholdAndStock) {
         return false;
     }
 
+    itemToUpdate.status = checkStatus(itemToUpdate.stock, SKUThresholdAndStock.threshold)
+
     const itemLog = {
-        SKU: SKUAndStock.SKU,
+        SKU: SKUThresholdAndStock.SKU,
         employeeId: itemToUpdate.updatedBy,
-        quantityChanged: calculateAmountChanged(itemToUpdate.stock, SKUAndStock.stock),
+        quantityChanged: calculateAmountChanged(itemToUpdate.stock, SKUThresholdAndStock.stock),
         note: itemToUpdate.note,
     };
 
@@ -67,16 +89,6 @@ exports.updateLocation = async (itemToUpdate) => {
     return await itemRepository.updateLocation(itemToUpdate);
 };
 
-exports.updateStatus = async (itemToUpdate) => {
-    const statusValidation = ['HEALTHY', 'CAUTION', 'CRITICAL'];
-
-    if (!statusValidation.includes(itemToUpdate.status.toUpperCase())) {
-        return false;
-    }
-
-    return await itemRepository.updateStatus(itemToUpdate);
-};
-
 exports.delete = async (id) => {
     return await itemRepository.delete(id);
 };
@@ -95,6 +107,8 @@ exports.importInventoryList = async (filename) => {
         if (typeof i.threshold === 'string') {
             i.stock = parseInt(i.threshold);
         }
+
+        i.status = checkStatus(i.stock, i.threshold);
     });
 
     const createdItems = await itemRepository.bulkCreate(items);
@@ -116,6 +130,11 @@ exports.updateStockByCSV = async (body) => {
         items: await fileTools.readCsv(filePath, {delimiter: ';', headers: true}),
         updatedBy: body.updatedBy,
     };
+    const items = await itemRepository.findBySKUsWithIncludedAttributes({SKUs: itemsToUpdate.items.map(i => i.SKU), attributes: ['SKU', 'threshold']});
+
+    if (!items) {
+        return false;
+    }
 
     // used because csv parser sometimes returns stock as string
     itemsToUpdate.items.forEach(i => {
@@ -125,6 +144,11 @@ exports.updateStockByCSV = async (body) => {
         if (typeof i.threshold === 'string') {
             i.stock = parseInt(i.threshold);
         }
+        items.forEach(x => {
+            if (i.SKU === x.SKU) {
+                x.status = checkStatus(i.stock, x.threshold);
+            }
+        });
     });
 
     validateCsvHeaders(['SKU', 'stock'], Object.keys(itemsToUpdate.items[0]))
@@ -239,3 +263,19 @@ const validateCsvHeaders = (validation, headers) => {
         }
     });
 };
+
+const checkStatus = (stock, threshold) => {
+    if (inRange(stock, threshold, threshold+5)) {
+        return 'CAUTION';
+    }
+    else if (stock < threshold) {
+        return 'CRITICAL';
+    }
+    else {
+        return 'HEALTHY';
+    }
+}
+
+const inRange = (x, min, max) => {
+    return ((x-min)*(x-max) <= 0);
+}

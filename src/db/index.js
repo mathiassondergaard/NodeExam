@@ -16,7 +16,7 @@ const sequelize = new Sequelize(process.env.WMS_DB_DB, process.env.WMS_DB_USER, 
         acquire: 30000,
         idle: 10000
     },
-
+    logging: false,
 });
 
 //TODO: maybe do a init script

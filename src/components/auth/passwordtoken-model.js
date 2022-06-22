@@ -30,7 +30,7 @@ const PasswordToken = db.sequelize.define('password_tokens', {
 PasswordToken.belongsTo(db.sequelize.models.users, {
     as: 'user',
     foreignKey: 'user_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
 });
 
 module.exports = PasswordToken;

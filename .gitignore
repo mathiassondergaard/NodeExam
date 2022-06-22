@@ -11,6 +11,7 @@ idea
 # logs
 logs
 *.log
+./logs
 
 # dotenv
 .env
