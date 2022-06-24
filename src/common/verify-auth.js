@@ -58,12 +58,17 @@ module.exports.modGuard = (req, res, next) => {
 };
 
 module.exports.verifySocketToken = async (token) => {
-    const decoded = await jwt.verify(token, publicKey, {algorithms: [process.env.KEY_ALGORITHM]});
-    if (!decoded) {
-        logger.error(`${moduleName} socket token is invalid`);
+    try {
+        const decoded = await jwt.verify(token, publicKey, {algorithms: [process.env.KEY_ALGORITHM]});
+        if (!decoded) {
+            logger.error(`${moduleName} socket token is invalid`);
+            return false;
+        }
+        return decoded;
+    } catch (e) {
+        logger.error(e.message);
         return false;
     }
-    return decoded;
 };
 
 const getJwt = (req) => {

@@ -8,25 +8,6 @@ const moduleName = 'inventory-controller.js -';
 
 // HTTP
 
-exports.create = async (req, res, next) => {
-
-    if (!Object.keys(req.body).length) {
-        logger.error(`${moduleName} empty body received`);
-        return next(new AppError('Please provide a body!', 400, true));
-    }
-
-    const created = await inventoryService.createItem(req.body);
-
-    if (!created) {
-        logger.error(`${moduleName} failed to create item`);
-        return next(new AppError('Failed to create items!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully created item ${JSON.stringify(created)}`);
-    return res.status(201).send(created);
-
-};
-
 exports.findAll = async (req, res, next) => {
     const items = await inventoryService.findAllItems();
 
@@ -71,23 +52,6 @@ exports.exportInventoryListWithPickedAttributes = async (req, res, next) => {
 
 };
 
-exports.bulkCreateFromFile = async (req, res, next) => {
-    if (!req.file || !validateFile(req.file.filename)) {
-        return next(new AppError('Invalid file extension / no file uploaded!', 400, true));
-    }
-
-    const item = await inventoryService.importInventoryList(req.file.filename);
-
-    if (!item) {
-        logger.error(`${moduleName} failed to find item`);
-        return next(new AppError('Failed to find items!', 500, true));
-    }
-
-    logger.info(`${moduleName} successfully found item ${req.params.id}`);
-    return res.status(201).send(item);
-
-};
-
 exports.exportFullInventoryList = async (req, res, next) => {
 
     const inventoryList = await inventoryService.exportInventoryList();
@@ -100,7 +64,7 @@ exports.exportFullInventoryList = async (req, res, next) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=inventory-list.csv");
 
-    logger.info(`${moduleName} successfully found exported inventory list`);
+    logger.info(`${moduleName} successfully exported inventory list`);
     return res.status(200).send(inventoryList);
 
 };
@@ -117,7 +81,7 @@ exports.exportPickedInventoryList = async (req, res, next) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=inventory-list.csv");
 
-    logger.info(`${moduleName} successfully found export inventory list ${JSON.stringify(req.body.SKUs)} ${JSON.stringify(req.body.attributes)}`);
+    logger.info(`${moduleName} successfully export inventory list ${JSON.stringify(req.body.SKUs)} ${JSON.stringify(req.body.attributes)}`);
     return res.status(200).send(inventoryList);
 
 };
@@ -132,16 +96,80 @@ exports.exportTemplateForBulkCreate = async (req, res) => {
 
 // Sockets
 
-// Do a check on status every 15 minutes, based on threshold
+// Do a check on inventory every 15 minutes,
 setInterval(async () => {
-    const items = await inventoryService.pollAndUpdateStatusBasedOnThreshold();
-    logger.info(`${moduleName} polled and updated status based on threshold`);
-    socket.ioInstance.emit('status-poll', items);
+    const items = await inventoryService.findAllItems();
+    logger.info(`${moduleName} polled items`);
+    socket.ioInstance.emit('inventory-poll', items);
 }, 900000);
+
+exports.create = async (req, res, next) => {
+
+    if (!Object.keys(req.body).length) {
+        logger.error(`${moduleName} empty body received`);
+        return next(new AppError('Please provide a body!', 400, true));
+    }
+
+    const created = await inventoryService.createItem(req.body);
+
+    if (!created) {
+        logger.error(`${moduleName} failed to create item`);
+        return next(new AppError('Failed to create items!', 500, true));
+    }
+
+    socket.ioInstance.emit('created-item', created);
+
+    logger.info(`${moduleName} successfully created item ${JSON.stringify(created)}`);
+    return res.status(201).send(created);
+
+};
+
+exports.delete = async (req, res, next) => {
+    const deleted = await inventoryService.delete(req.params.id);
+
+    if (!deleted) {
+        logger.error(`${moduleName} failed to delete item`);
+        return next(new AppError('Failed to delete items!', 500, true));
+    }
+
+    const currentEmpSocket = socket.ioInstance.users.find(i => i.employeeId === req.employeeId);
+    if (currentEmpSocket) {
+        socket.ioInstance.sockets.sockets.get(currentEmpSocket.socket).broadcast.emit('deleted-item', `Item ${req.params.id} was just deleted, please refresh inventory table!`);
+    }
+
+    logger.info(`${moduleName} successfully deleted item ${req.params.id}`);
+    return res.sendStatus(200);
+};
+
+exports.bulkCreateFromFile = async (req, res, next) => {
+    if (!req.file || !validateFile(req.file.filename)) {
+        return next(new AppError('Invalid file extension / no file uploaded!', 400, true));
+    }
+
+    if (req.file.fieldname !== "inventory-list") {
+        return next(new AppError('Invalid file uploaded!', 400, true));
+    }
+
+    const items = await inventoryService.importInventoryList(req.file.filename);
+
+    if (!items) {
+        logger.error(`${moduleName} failed to create items from csv`);
+        return next(new AppError('Failed create imported inventory!', 500, true));
+    }
+
+    socket.ioInstance.emit('created-items-bulk', items);
+
+    logger.info(`${moduleName} successfully added uploaded items`);
+    return res.status(200).send(items);
+};
 
 exports.updateStockByFile = async (req, res, next) => {
     if (!req.file || !validateFile(req.file.filename)) {
         return next(new AppError('Invalid file / no file uploaded!', 400, true));
+    }
+
+    if (req.file.fieldname !== "stock-list") {
+        return next(new AppError('Invalid file uploaded!', 400, true));
     }
 
     const options = {
@@ -154,27 +182,13 @@ exports.updateStockByFile = async (req, res, next) => {
 
     if (!updated) {
         logger.error(`${moduleName} failed to update stock by csv file ${req.file.filename}`);
-        return next(new AppError('Failed to find items!', 500, true));
+        return next(new AppError('Failed to update stock by import!', 500, true));
     }
 
     socket.ioInstance.emit('updated-stock-bulk', updated);
 
-    logger.info(`${moduleName} successfully updated item by csv`);
+    logger.info(`${moduleName} successfully updated items stock by csv`);
     return res.status(200).send(updated);
-};
-
-exports.delete = async (req, res, next) => {
-    const deleted = await inventoryService.delete(req.params.id);
-
-    if (!deleted) {
-        logger.error(`${moduleName} failed to delete item`);
-        return next(new AppError('Failed to delete items!', 500, true));
-    }
-
-    socket.ioInstance.emit('deleted-item', req.params.id);
-
-    logger.info(`${moduleName} successfully deleted item ${req.params.id}`);
-    return res.sendStatus(200);
 };
 
 exports.updateItem = async (req, res, next) => {

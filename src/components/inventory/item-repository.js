@@ -21,7 +21,7 @@ exports.create = async (item) => {
 
     logger.debug(`${moduleName} created item ${JSON.stringify(_item)}`);
 
-    return item;
+    return await Item.findOne({where: {SKU: item.SKU}}).get({plain: true});
 };
 
 //Must have name, SKU, stock, threshold, location with same key/value pair
@@ -35,7 +35,7 @@ exports.bulkCreate = async (items) => {
 
     logger.debug(`${moduleName} created items ${JSON.stringify(_items)}`);
 
-    return _items.map(item => item.get({plain: true}));
+    return true;
 };
 
 exports.findById = async (id) => {
@@ -207,7 +207,7 @@ exports.updateStock = async (itemToUpdate, transaction) => {
 exports.updateStockOnMultiple = async (itemsToUpdate, transaction) => {
 
     const updates = itemsToUpdate.items.map(i => Item.update(
-        { stock: i.stock, lastUpdatedBy: itemsToUpdate.updatedBy },
+        { stock: i.stock, status: i.status, lastUpdatedBy: itemsToUpdate.updatedBy },
         { where: { SKU: i.SKU}, transaction }
     ));
 

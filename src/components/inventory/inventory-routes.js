@@ -5,7 +5,7 @@ const upload = require('./file-tools').upload;
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
-    app.use(apiLimiter);
+    //app.use(apiLimiter);
 
     app.use((req, res, next) => {
         res.header(
@@ -30,9 +30,9 @@ module.exports = (app) => {
 
     router.get('/download/full-list', asyncHandler(verifyJwt), asyncHandler(controller.exportFullInventoryList));
 
-    router.get('/download/picked-attributes', asyncHandler(verifyJwt), asyncHandler(controller.exportInventoryListWithPickedAttributes));
+    router.post('/download/picked-attributes', asyncHandler(verifyJwt), asyncHandler(controller.exportInventoryListWithPickedAttributes));
 
-    router.get('/download/picked-list', asyncHandler(verifyJwt), asyncHandler(controller.exportPickedInventoryList));
+    router.post('/download/picked-list', asyncHandler(verifyJwt), asyncHandler(controller.exportPickedInventoryList));
 
     router.get('/download/template', asyncHandler(verifyJwt), asyncHandler(controller.exportTemplateForBulkCreate));
 

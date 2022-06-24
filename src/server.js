@@ -1,5 +1,6 @@
 const express = require('express')
 const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const {errorHandler} = require("./error");
 const cors = require('cors');
 require('dotenv').config();
@@ -23,21 +24,32 @@ db.sequelize.sync().then(() => console.log(`Successfully synced DB models`));
 
 // Socket.io
 io.use(async (socket, next) => {
-    if (!socket.handshake.query || !socket.handshake.query.token) {
-        console.log('Authentication failed');
-        next(new Error('No token submitted!'));
+    let cookies = socket.handshake.headers.cookie;
+
+    if (!io.users) {
+        io.users = [];
     }
-    const isVerified = await verifyJwtForSocket(socket.handshake.query.token);
+
+    if (!cookies) {
+        return;
+    }
+
+    const isVerified = await verifyJwtForSocket(cookie.parse(socket.handshake.headers.cookie).jwt);
     if (!isVerified) {
         console.log('Authentication failed');
-        return next(new Error('Token is invalid!'));
+        socket.emit('invalid-token', 'Token for socket connection is invalid!');
+        return;
     }
     socket.decoded = isVerified;
+    io.users.push({employeeId: isVerified.employeeId, socket: socket.id});
+
     next();
-}).on('connection', (socket) => {
+});
+io.on('connection', (socket) => {
     console.log(`Employee ${socket.decoded.employeeId} connected to WMS socket`);
 
     socket.on('disconnect', () => {
+        io.users = io.users.filter((i) => i.employeeId !== socket.decoded.employeeId);
         console.log(`Employee ${socket.decoded.employeeId} disconnected from WMS socket`);
     });
 });

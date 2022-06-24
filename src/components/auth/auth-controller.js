@@ -34,10 +34,6 @@ exports.signIn = async (req, res, next) => {
     logger.info(`${moduleName} user successfully authenticated ${JSON.stringify(signedIn.user.username)}`);
     res.cookie('jwt', signedIn.accessToken, { secure: false, expires: expiresAt, httpOnly: true });
     return res.status(200).send({
-        id: signedIn.user.id,
-        username: signedIn.user.username,
-        email: signedIn.user.email,
-        roles: signedIn.user.roles,
         accessToken: signedIn.accessToken,
         refreshToken: signedIn.refreshToken,
     });

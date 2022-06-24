@@ -36,24 +36,6 @@ exports.updateItem = async (itemToUpdate) => {
     return await itemRepository.update(itemToUpdate);
 };
 
-exports.pollAndUpdateStatusBasedOnThreshold = async () => {
-    const items = await itemRepository.findAllStockAndThreshold();
-
-    const updatedItems = [];
-
-    for (const item of items) {
-        item.status = checkStatus(item.stock, item.threshold);
-
-        const updatedItem = await itemRepository.updateStatusOnPoll(item);
-        if (!updatedItems) {
-            throw new AppError('Update status on poll failed', 500, true);
-        }
-        updatedItems.push(updatedItem);
-    }
-
-    return updatedItems;
-};
-
 exports.updateStock = async (itemToUpdate) => {
     const transaction = await db.sequelize.transaction();
 
@@ -97,7 +79,7 @@ exports.importInventoryList = async (filename) => {
     let filePath = path.join(__basedir, '/resources/uploads/', filename);
 
     const items = await fileTools.readCsv(filePath, {delimiter: ';', headers: true});
-
+    const SKUs = [];
     validateCsvHeaders(['name', 'SKU', 'stock', 'threshold', 'location'], Object.keys(items[0]))
 
     items.forEach(i => {
@@ -107,7 +89,7 @@ exports.importInventoryList = async (filename) => {
         if (typeof i.threshold === 'string') {
             i.stock = parseInt(i.threshold);
         }
-
+        SKUs.push(i.SKU);
         i.status = checkStatus(i.stock, i.threshold);
     });
 
@@ -119,7 +101,7 @@ exports.importInventoryList = async (filename) => {
 
     await fileTools.deleteFile(filePath);
 
-    return createdItems;
+    return await itemRepository.findBySKUs(SKUs);
 };
 
 exports.updateStockByCSV = async (body) => {
@@ -130,11 +112,15 @@ exports.updateStockByCSV = async (body) => {
         items: await fileTools.readCsv(filePath, {delimiter: ';', headers: true}),
         updatedBy: body.updatedBy,
     };
+
+    // STATUS NOT UPDATING CORRECTLY
     const items = await itemRepository.findBySKUsWithIncludedAttributes({SKUs: itemsToUpdate.items.map(i => i.SKU), attributes: ['SKU', 'threshold']});
 
     if (!items) {
         return false;
     }
+
+    validateCsvHeaders(['SKU', 'stock'], Object.keys(itemsToUpdate.items[0]))
 
     // used because csv parser sometimes returns stock as string
     itemsToUpdate.items.forEach(i => {
@@ -146,12 +132,10 @@ exports.updateStockByCSV = async (body) => {
         }
         items.forEach(x => {
             if (i.SKU === x.SKU) {
-                x.status = checkStatus(i.stock, x.threshold);
+                i.status = checkStatus(i.stock, x.threshold);
             }
         });
     });
-
-    validateCsvHeaders(['SKU', 'stock'], Object.keys(itemsToUpdate.items[0]))
 
     const batchLog = {
         affectedItemsSKUs: itemsToUpdate.items.map(i => i.SKU),
@@ -186,6 +170,7 @@ exports.exportInventoryList = async () => {
 };
 
 exports.exportInventoryListWithPickedAttributes = async (attributes) => {
+    attributes = attributes.map(attrib => {if (attrib === "sku") { return attrib.toUpperCase();} else if (attrib === "updated by") { return "lastUpdatedBy"} else return attrib})
     const items = await itemRepository.findAllWithIncludedAttributes(attributes);
 
     const csvFile = await fileTools.generateCsvFile(Object.keys(items[0]), items);
@@ -198,6 +183,8 @@ exports.exportInventoryListWithPickedAttributes = async (attributes) => {
 };
 
 exports.exportPickedInventoryList = async (options) => {
+    options.attributes = options.attributes.map(attrib => {if (attrib === "sku") { return attrib.toUpperCase();} else if (attrib === "updated by") { return "lastUpdatedBy"} else return attrib})
+
     const items = await itemRepository.findBySKUsWithIncludedAttributes(options);
 
     const csvFile = await fileTools.generateCsvFile(Object.keys(items[0]), items);
@@ -241,6 +228,9 @@ exports.deleteBatchLog = async (id) => {
 // Helper
 
 const calculateAmountChanged = (newStock, oldStock) => {
+    if (typeof newStock === "string") {
+        newStock = parseInt(newStock);
+    }
     let amountChanged = '';
 
     if (newStock > oldStock) {
