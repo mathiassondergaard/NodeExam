@@ -8,8 +8,8 @@ const apiLimiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 60 minutes
-    max: 3, // 3 requests per 60 minutes
+    windowMs: 15 * 60 * 1000, // 60 minutes
+    max: 50, // 100 requests per 60 minutes
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });

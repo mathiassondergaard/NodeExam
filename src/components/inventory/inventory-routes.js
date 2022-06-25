@@ -5,7 +5,7 @@ const upload = require('./file-tools').upload;
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
-    //app.use(apiLimiter);
+    app.use(apiLimiter);
 
     app.use((req, res, next) => {
         res.header(

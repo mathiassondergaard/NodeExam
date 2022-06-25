@@ -4,7 +4,7 @@ const {apiLimiter, adminGuard, verifyJwt} = require('../../common');
 const { asyncHandler } = require('../../error');
 
 module.exports = (app) => {
-    //app.use(apiLimiter);
+    app.use(apiLimiter);
 
     app.use((req, res, next) => {
         res.header(

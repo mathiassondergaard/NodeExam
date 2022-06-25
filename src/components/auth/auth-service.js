@@ -147,7 +147,10 @@ exports.findByUsername = async (username) => {
 exports.updateUserRoles = async (id, roles) => {
     const rolesToUpdate = [];
 
-    //TODO PROBABLY NEEDS SOME VALIDAITON OF SOME SORTS
+    if (!['USER', 'MODERATOR', 'ADMIN'].contains(roles)) {
+        return false;
+    }
+
     for (const role of roles) {
         const result = await roleRepository.findByRole(role);
         rolesToUpdate.push(result);
