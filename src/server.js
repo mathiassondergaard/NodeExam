@@ -41,8 +41,15 @@ io.use(async (socket, next) => {
         return;
     }
     socket.decoded = isVerified;
+    if (io.users) {
+        let index = io.users.indexOf(io.users.find(i => i.employeeId === isVerified.employeeId));
+        if (index !== -1) {
+            io.users = io.users.filter(i => !(i.employeeId === isVerified.employeeId));
+            io.users.push({employeeId: isVerified.employeeId, socket: socket.id});
+            next();
+        }
+    }
     io.users.push({employeeId: isVerified.employeeId, socket: socket.id});
-
     next();
 });
 io.on('connection', (socket) => {
